@@ -6,8 +6,8 @@
 
 | 文件 | 分区 |
 |---|---|
-| board.js | 留言板（含表单、留言列表、种子留言配置） |
-| links.js | 网站推荐（数据在 content/links.js，加网站改那里即可） |
+| board.js | 留言板（giscus 真评论区，评论存仓库 Discussions；配置在 site.js 的 giscus 段） |
+| links.js | 网站推荐（数据在 content/links/ 目录，一个网站一个文件） |
 | _template.js | 新分区模板（不会被加载） |
 
 首页 / 文章 / 作品是内置分区，代码在 index.html 里；扩展分区（如留言板）在本目录。
@@ -20,9 +20,9 @@
 
 ## 留言板维护
 
-- 整个留言板逻辑在 `board.js`，改样式或行为只动这个文件；
-- 文件顶部的 `BLOG_BOARD_SEEDS` 是新访客看到的初始留言，可自由增删；
-- 访客提交的留言存在访客自己的浏览器里（localStorage），换浏览器看不到——这是纯静态方案的限制，需要全站共享留言就得接后端。
+- 留言板由 giscus 驱动（评论区直接嵌入，访客用 GitHub 账号登录留言）；
+- 评论数据存在**仓库的 Discussions 标签**里，置顶/回复/删除去仓库页面操作；
+- 更换 giscus 仓库/分类：改 site.js 的 `giscus` 配置段（ID 在 https://giscus.app 生成）。
 
 ## ctx 接口
 

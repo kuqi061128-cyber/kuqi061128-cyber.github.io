@@ -13,12 +13,7 @@ content/
 │   └── 2026-08-22-publish-guide.js
 ├── works/                作品：一个作品一个文件
 │   ├── _template.js        作品模板（不会被加载）
-│   ├── 01-dsh-desktop.js
-│   ├── 02-homepage.js
-│   ├── 03-dashboard.js
-│   ├── 04-snake-game.js
-│   ├── 05-markdown-editor.js
-│   └── 06-blog-icons.js
+│   └── 01-dsh-desktop.js（+ 与它同名的图片文件夹）
 ├── links/                网站推荐：一个网站一个文件
 │   ├── _template.js        推荐模板（不会被加载）
 │   └── 01-deepseek.js … 08-unsplash.js
