@@ -433,7 +433,7 @@
 </head>
 <body>
 
-<video id="bgVideo" autoplay loop muted playsinline></video>
+<video id="bgVideo" loop muted playsinline preload="none"></video>
 
 <!-- ================= 顶部导航：分区切换 ================= -->
 <nav>
@@ -470,7 +470,7 @@
 </script>
 <script src="plugins/clock.js"></script>
 <script src="plugins/quote.js"></script>
-<script src="plugins/pet.js?v=12"></script>
+<script src="plugins/pet.js?v=14"></script>
 <script src="plugins/site-stats.js"></script>
 <script src="plugins/hot-posts.js"></script>
 <script src="plugins/categories.js"></script>
@@ -567,12 +567,19 @@ document.documentElement.style.setProperty("--bg-image", 'url("' + SITE.backgrou
 document.documentElement.style.setProperty("--bg-dim", String(SITE.backgroundDim));
 if (SITE.cardOpacity != null) document.documentElement.style.setProperty("--card-opacity", String(SITE.cardOpacity));
 if (SITE.cardBlur != null) document.documentElement.style.setProperty("--card-blur", String(SITE.cardBlur));
+/* 视频背景体积大：移动端不加载（用静态背景图），桌面端也等页面加载完再拉，首屏不被大视频阻塞 */
 if (SITE.backgroundVideo) {
   var bgV = document.getElementById("bgVideo");
-  bgV.src = SITE.backgroundVideo;
-  bgV.style.display = "block";
-  var bgPlay = bgV.play();
-  if (bgPlay && bgPlay.catch) bgPlay.catch(function () {});
+  if (window.matchMedia("(min-width: 781px)").matches) {
+    var bgEnable = function () {
+      bgV.src = SITE.backgroundVideo;
+      bgV.style.display = "block";
+      var bgPlay = bgV.play();
+      if (bgPlay && bgPlay.catch) bgPlay.catch(function () {});
+    };
+    if (document.readyState === "complete") bgEnable();
+    else window.addEventListener("load", bgEnable);
+  }
 }
 
 /* ================= 工具函数 ================= */

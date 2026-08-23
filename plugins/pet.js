@@ -4,24 +4,20 @@
  *   - 常驻屏幕角落，可任意拖拽，四边/四角自动吸附
  *   - 贴左边缘时整体水平镜像翻转（文字保持正向）
  *   - 按压 Q 弹（底部锚定）+ 按压/松手音效（缺失静默降级）
- *   - 单击 = 加权随机台词（气泡可关），首次点击给博客点赞
- *     · GIF 形象：台词写进 touch.gif 自带的气泡框
- *     · 其他形象：白色气泡，点气泡换一句
+ *   - 单击 = 加权随机台词（写进 touch.gif 自带的气泡框，气泡可关），首次点击给博客点赞
  *   - 聊天状态（回复图 + 放大）5 秒自动收起
  *   - 双击 = 跳转留言板
- *   - ☰ 菜单：大小 / 聊天放大 / 气泡开关 / 形象 / 音效 / 音量 / 音效组
+ *   - ☰ 菜单：大小 / 聊天放大 / 气泡开关 / 音效 / 音量 / 音效组
  *   - 基础尺寸随浏览器窗口自适应，配置存在访客浏览器本地
  * 素材在本插件自己的文件夹 plugins/pet/ 里，换形象直接替换图片
  * ============================================================ */
 (function () {
   const DIR = "plugins/pet/";
-  /* 形象配置：idle=待机图 touch=被点击后的回复图 full=是否圆形照片框 */
+  /* 形象配置：idle=待机图 touch=被点击后的回复图 full=是否圆形照片框
+     （旧的 photo / whale 形象素材已删除；要恢复：图片放回 plugins/pet/ 再加一行配置） */
   const BODY = {
-    gif:    { idle: DIR + "idle.gif?v=2",  touch: DIR + "touch.gif?v=2", full: false, sayInPic: true },
-    photo:  { idle: DIR + "body.jpg?v=2",  touch: DIR + "body.jpg?v=2",  full: true },
-    whale:  { idle: DIR + "alt.png?v=2",   touch: DIR + "rua.gif?v=2",   full: false },
+    gif: { idle: DIR + "idle.gif?v=3", touch: DIR + "touch.gif?v=4", full: false, sayInPic: true },
   };
-  const BODY_KEYS = ["gif", "photo", "whale"];
   const SOUNDS = {
     duck: { press: DIR + "Ya1.mp3", release: DIR + "Ya2.mp3" },   // 小黄鸭
     fx1:  { press: DIR + "D1.mp3",  release: DIR + "D2.mp3" },    // 音效1
@@ -38,7 +34,6 @@
     ["谢谢你来看我们喵！", 1],
     ["喵呜～", 1],
   ];
-  const GIF = DIR + "rua.gif?v=2";
   const CHAT_MS = 5000;   // 聊天状态持续时间（参照鲸鱼挂件：气泡 5 秒自动收起）
 
   /* touch.gif 画面里自带气泡框（像素实测：水平 6%~72%、垂直 8%~47%）
@@ -113,16 +108,8 @@
       ".bp-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}" +
       ".bp-row:last-child{margin-bottom:0}" +
       ".bp-row input[type=range]{width:100px;accent-color:#38bdf8}" +
-      ".bp-row select,.bp-mini{background:rgba(15,23,42,.6);color:#e2e8f0;border:1px solid rgba(255,255,255,.15);" +
+      ".bp-row select{background:rgba(15,23,42,.6);color:#e2e8f0;border:1px solid rgba(255,255,255,.15);" +
       "border-radius:6px;font-size:12px;padding:2px 6px;cursor:pointer}" +
-      ".bp-bubble{position:absolute;bottom:calc(100% + 12px);left:50%;transform:translateX(-50%) scale(.8);" +
-      "max-width:230px;background:#fff;color:#334155;border-radius:12px;padding:8px 14px;font-size:13px;" +
-      "line-height:1.5;opacity:0;pointer-events:none;transition:.2s;z-index:2;cursor:pointer;" +
-      "box-shadow:0 6px 18px rgba(0,0,0,.3)}" +
-      ".bp-bubble.show{opacity:1;pointer-events:auto;transform:translateX(-50%) scale(1)}" +
-      ".bp-bubble::after{content:'';position:absolute;top:100%;left:50%;margin-left:-6px;" +
-      "border:6px solid transparent;border-top-color:#fff}" +
-      ".bp-bubble img{display:block;max-width:180px;border-radius:8px;margin-top:6px}" +
       ".bp-say{position:absolute;display:flex;align-items:center;justify-content:center;" +
       "text-align:center;font-weight:700;color:#4a3728;line-height:1.3;" +
       "font-size:calc(9px*var(--bp-scale,1));pointer-events:none;opacity:0;transition:.15s;z-index:2;" +
@@ -131,20 +118,7 @@
     document.head.appendChild(st);
   }
 
-  let bubbleTimer = null;
   let touchTimer = null;
-
-  function showBubble(el, html) {
-    const b = el.querySelector('[data-role="bubble"]');
-    b.innerHTML = html;
-    b.classList.add("show");
-    clearTimeout(bubbleTimer);
-    bubbleTimer = setTimeout(function () { b.classList.remove("show"); }, 5000);
-  }
-  function hideBubble(el) {
-    clearTimeout(bubbleTimer);
-    el.querySelector('[data-role="bubble"]').classList.remove("show");
-  }
 
   function bodyDef() { return BODY[cfg.body] || BODY.gif; }
 
@@ -205,12 +179,10 @@
           '<div class="bp-flipwrap"><img class="bp-body" draggable="false" alt="桌宠"></div>' +
           '<div class="bp-say" data-role="say" style="left:' + SAY.left + ';top:' + SAY.top + ';width:' + SAY.width + ';height:' + SAY.height + '"></div>' +
         '</div>' +
-        '<div class="bp-bubble" data-role="bubble"></div>' +
         '<div class="bp-panel" data-role="panel">' +
           '<div class="bp-row"><span>大小</span><input type="range" min="0.6" max="2" step="0.05" value="' + cfg.scale + '" data-cfg="scale"></div>' +
           '<div class="bp-row"><span>聊天放大</span><input type="range" min="1" max="3" step="0.1" value="' + (cfg.chatScale || 1.6) + '" data-cfg="chatScale"></div>' +
           '<div class="bp-row"><span>气泡</span><input type="checkbox"' + (cfg.bubble ? " checked" : "") + ' data-cfg="bubble"></div>' +
-          '<div class="bp-row"><span>形象</span><button class="bp-mini" data-act="body">切换形象</button></div>' +
           '<div class="bp-row"><span>音效</span><input type="checkbox"' + (cfg.sound ? " checked" : "") + ' data-cfg="sound"></div>' +
           '<div class="bp-row"><span>音量</span><input type="range" min="0" max="1" step="0.05" value="' + cfg.vol + '" data-cfg="vol"></div>' +
           '<div class="bp-row"><span>音效组</span><select data-cfg="set">' +
@@ -231,8 +203,7 @@
       /* ---- 拖拽 + 按压 + 点击 ---- */
       let drag = null;
       el.addEventListener("pointerdown", function (e) {
-        if (e.target.closest(".bp-panel") || e.target.closest(".bp-menu-btn") ||
-            e.target.closest(".bp-bubble")) return;
+        if (e.target.closest(".bp-panel") || e.target.closest(".bp-menu-btn")) return;
         drag = { lastX: e.clientX, lastY: e.clientY, moved: false };
         el.classList.add("squish");
         play("press");
@@ -279,7 +250,6 @@
         } else {
           /* 单击 = 点赞（首次）+ 回复动画 + 加权随机台词 */
           el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
-          const b = bodyDef();
           let line = null;
           if (!ctx.state.liked) {
             ctx.state.likes += 1; ctx.state.liked = true;
@@ -291,28 +261,17 @@
           }
           if (!cfg.bubble) { drag = null; return; }   // 气泡关闭：只 Q 弹 + 音效 + 点赞
           playTouch(el);
-          const text = line || pickTalk();
           const say = el.querySelector('[data-role="say"]');
-          if (b.sayInPic && say) {
-            /* GIF 自带气泡框：台词写进图片气泡里，聊天期间每点一次直接换一句 */
-            hideBubble(el);
-            say.textContent = text;
+          if (say) {
+            /* 台词写进 touch.gif 自带的气泡框，聊天期间每点一次直接换一句 */
+            say.textContent = line || pickTalk();
             say.classList.add("show");
-          } else {
-            const bubble = el.querySelector('[data-role="bubble"]');
-            if (bubble.classList.contains("show")) { hideBubble(el); }
-            else if (!line && Math.random() < 0.18) {
-              showBubble(el, 'Rua——！<img src="' + GIF + '" alt="rua">');
-            } else {
-              showBubble(el, text);
-            }
           }
         }
         drag = null;
       });
       /* 双击 = 去留言板 */
       el.addEventListener("dblclick", function () {
-        hideBubble(el);
         ctx.toast("带你去留言板喵～");
         window.location.hash = "#/board";
       });
@@ -321,13 +280,6 @@
       el.addEventListener("click", function (e) {
         if (e.target.closest('[data-act="menu"]')) {
           el.querySelector('[data-role="panel"]').classList.toggle("open");
-        } else if (e.target.closest('[data-act="body"]')) {
-          const cur = BODY[cfg.body] ? cfg.body : "gif";
-          cfg.body = BODY_KEYS[(BODY_KEYS.indexOf(cur) + 1) % BODY_KEYS.length];
-          clearTimeout(touchTimer);
-          applyCfg(el); save();
-        } else if (e.target.closest(".bp-bubble")) {
-          showBubble(el, pickTalk());   // 点白色气泡：换一句
         }
       });
       el.addEventListener("input", function (e) {
@@ -335,10 +287,9 @@
         if (!k) return;
         const t = e.target.type;
         cfg[k] = t === "checkbox" ? e.target.checked : (t === "range" ? Number(e.target.value) : e.target.value);
-        if (k === "scale" || k === "body") applyCfg(el);
+        if (k === "scale") applyCfg(el);
         if (k === "chatScale" && touchTimer) el.style.setProperty("--bp-scale", cfg.scale * cfg.chatScale);
         if (k === "bubble" && !cfg.bubble) {
-          hideBubble(el);
           const say = el.querySelector('[data-role="say"]');
           if (say) { say.classList.remove("show"); say.textContent = ""; }
         }
