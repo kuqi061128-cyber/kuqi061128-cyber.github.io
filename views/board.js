@@ -14,12 +14,16 @@
     order: 40,         // 排在导航里的位置（内置分区：首页10/文章20/作品30）
 
     render(el, ctx) {
+      const g = ctx.SITE.giscus || {};
+      const ghLink = "https://github.com/" + (g.repo || "") + "/discussions?discussions_q=guestbook";
       el.innerHTML =
         '<div class="view-head"><h2 class="view-title">💬 留言板</h2></div>' +
         '<div class="widget" style="padding:6px">' +
-        '<div class="giscus" style="margin:14px"></div></div>';
+        '<div class="giscus" style="margin:14px"></div>' +
+        '<div style="text-align:right;padding:0 14px 12px;font-size:12px">' +
+        '<a href="' + ghLink + '" target="_blank" rel="noopener" style="color:var(--muted)">评论发不出去？在 GitHub 上参与讨论 →</a></div>' +
+        '</div>';
       const box = el.querySelector(".giscus");
-      const g = ctx.SITE.giscus || {};
       if (!g.repo || !g.repoId || !g.categoryId) {
         box.innerHTML = '<div class="empty">留言板还没配置：请在 site.js 的 giscus 段填入仓库信息</div>';
         return;
