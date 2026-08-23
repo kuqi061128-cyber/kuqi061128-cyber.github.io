@@ -17,7 +17,6 @@
         '<div class="widget-title"><span><span class="ico">📊</span>站点统计</span></div>' +
         row("文章数", ctx.ARTICLES.length) +
         row("作品数", ctx.WORKS.length) +
-        row("留言数", s.messages.length) +
         row("总访问量", s.visits) +
         row("获赞数", 256 + s.likes);
     },

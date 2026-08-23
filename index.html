@@ -461,7 +461,7 @@
 <div class="toast" id="toast"></div>
 
 <!-- ================= 站点信息：博客名 / 头像 / 介绍 / 背景图 / 页脚，改 site.js 即可 ================= -->
-<script src="site.js?v=3"></script>
+<script src="site.js?v=4"></script>
 
 <!-- ================= 插件库：一个插件一个文件，升级/更换/下线只动 plugins/ 目录 ================= -->
 <script>
@@ -471,7 +471,7 @@
 <script src="plugins/clock.js"></script>
 <script src="plugins/quote.js"></script>
 <script src="plugins/pet.js?v=14"></script>
-<script src="plugins/site-stats.js"></script>
+<script src="plugins/site-stats.js?v=2"></script>
 <script src="plugins/hot-posts.js"></script>
 <script src="plugins/categories.js"></script>
 <script src="plugins/tag-cloud.js"></script>
@@ -517,7 +517,7 @@
   window.BLOG_SECTIONS = [];
   window.registerSection = function (def) { BLOG_SECTIONS.push(def); };
 </script>
-<script src="views/board.js"></script>
+<script src="views/board.js?v=2"></script>
 <script src="views/links.js"></script>
 
 <script>
@@ -550,7 +550,6 @@ const state = {
   likes: storeGet("dsh_likes", 0),
   liked: storeGet("dsh_liked", false),
   viewExtra: storeGet("dsh_views", {}),   // 每篇文章的额外浏览量
-  messages: storeGet("dsh_msgs", window.BLOG_BOARD_SEEDS || []),
 };
 
 function articleViews(id) {
@@ -697,8 +696,7 @@ function renderHome() {
       '<p>' + esc(SITE.tagline) + '</p>' +
       (SITE.intro ? '<p class="site-intro">' + esc(SITE.intro) + '</p>' : '') +
       '<div class="chips"><span class="chip">文章 ' + ARTICLES.length + '</span>' +
-      '<span class="chip">作品 ' + WORKS.length + '</span>' +
-      '<span class="chip">留言 ' + state.messages.length + '</span></div></div>' +
+      '<span class="chip">作品 ' + WORKS.length + '</span></div></div>' +
     '</div>' +
     '<div class="sec-head"><h3>📝 最新文章</h3><a href="#/articles">查看全部 →</a></div>' +
     latest.map(postCard).join("") +
@@ -836,6 +834,11 @@ function applyTheme(t) {
     btn.textContent = t === "light" ? "🌙" : "☀️";
     btn.title = t === "light" ? "切换到暗色主题" : "切换到亮色主题";
   }
+  /* 留言板 giscus iframe 跟随主题（transparent_dark 透明底适合本站暗色） */
+  const gf = document.querySelector("iframe.giscus-beta");
+  if (gf) gf.contentWindow.postMessage(
+    { giscus: { setConfig: { theme: t === "light" ? "noborder_light" : "transparent_dark" } } },
+    "https://giscus.app");
 }
 let theme = storeGet("dsh_theme", "dark");
 applyTheme(theme);
