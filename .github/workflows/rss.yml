@@ -1,0 +1,30 @@
+# 发新文章后自动重新生成 rss.xml 并提交，不用手动跑 tools/build-rss.js
+# 只在 content/posts/ 有变更时触发；rss.xml 自身的提交不会再触发（防循环）
+name: 自动更新 RSS
+on:
+  push:
+    paths: ['content/posts/**']
+
+permissions:
+  contents: write
+
+jobs:
+  rss:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/build-rss.js
+      - name: 有变化才提交
+        run: |
+          if ! git diff --quiet rss.xml; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add rss.xml
+            git commit -m "自动更新 RSS（文章变更）"
+            git push
+          else
+            echo "RSS 无变化，跳过提交"
+          fi

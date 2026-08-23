@@ -7,6 +7,7 @@
 | 文件 | 分区 |
 |---|---|
 | board.js | 留言板（giscus 真评论区，评论存仓库 Discussions；配置在 site.js 的 giscus 段） |
+| about.js | 关于（自我介绍 + 建站故事 + 链接，内容直接改本文件） |
 | links.js | 网站推荐（数据在 content/links/ 目录，一个网站一个文件） |
 | _template.js | 新分区模板（不会被加载） |
 

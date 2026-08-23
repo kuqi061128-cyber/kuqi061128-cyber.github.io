@@ -6,7 +6,7 @@
 
 | 我想… | 要动的文件 | 还要做什么 |
 |---|---|---|
-| 发一篇新文章 | 复制 `content/posts/_template.js` 改名 | ① index.html 加引入行 ② `node tools/build-rss.js` ③ git 三连 |
+| 发一篇新文章 | 复制 `content/posts/_template.js` 改名 | index.html 加引入行 → git 三连（RSS 推送后自动更新） |
 | 发一个新作品 | 复制 `content/works/_template.js` 改名 | index.html 加引入行 → git 三连 |
 | 给作品换新安装包（≤100MB） | 作品 js 里的 `file` | 包放 `downloads/` → git 三连 |
 | 给作品换新安装包（>100MB） | 作品 js 里的 `file`/`version`/`size` | **先走 Releases 上传**（见四）→ git 三连 |
@@ -24,14 +24,14 @@
 
 注意：site.js 自己也有版本号。改完内容要去 index.html 把 `site.js?v=6` 的数字加一（如 → `?v=7`），否则老访客最多延迟 10 分钟才看到。
 
-## 二、发一篇新文章（完整五步）
+## 二、发一篇新文章（完整四步）
 
 1. **复制模板**：`content/posts/_template.js` → 重命名为 `日期-英文Slug.js`（如 `2026-09-01-my-post.js`）；
 2. **填内容**：打开新文件，填写 `id`（没用过的数字，发布后永远不要改，文章链接靠它）、标题、日期（YYYY-MM-DD）、分类、标签、摘要、正文；
 3. **挂引入**：index.html 搜 `content/posts/`，在最后一篇下面加一行：
    `<script src="content/posts/2026-09-01-my-post.js"></script>`
-4. **更新 RSS**：终端执行 `node tools/build-rss.js`；
-5. **git 三连**（见第九节）。
+4. **git 三连**（见第九节）——推送后 GitHub Action 会自动重新生成 rss.xml，不用手动跑
+   `node tools/build-rss.js`（本地想先看 RSS 效果时才需要手动跑一次）。
 
 文章插图：建与 js 文件同名的文件夹（`content/posts/2026-09-01-my-post/`），图片放里面，正文写裸文件名 `<img src="1.png">` 即可。
 
@@ -238,4 +238,4 @@ To https://github.com/kuqi061128-cyber/kuqi061128-cyber.github.io.git
 | 图片裂图 | 检查文件名大小写、图片是否在与 js 同名的文件夹里 |
 | 上传超 100MB 失败 | 走 Releases（见第四节） |
 | 想先看本地效果 | my-site 目录执行 `python -m http.server 8642` → 浏览器开 `http://localhost:8642` |
-| 忘了跑 build-rss | 随时补跑 `node tools/build-rss.js` 再 git 三连 |
+| RSS 没更新 | 正常会由 GitHub Action 自动更新；去仓库 Actions 页看是否跑失败，或本地补跑 `node tools/build-rss.js` 再 git 三连 |

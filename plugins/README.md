@@ -14,6 +14,7 @@
 | hot-posts.js | 右栏 | 热门文章 |
 | categories.js | 右栏 | 分类统计 |
 | tag-cloud.js | 右栏 | 标签云 |
+| reading-aid.js | 浮动 | 阅读辅助（导航底部阅读进度条 + 返回顶部按钮，自动避开桌宠区域） |
 | _template.js | — | 开发模板（不会被加载） |
 
 ## 日常维护
