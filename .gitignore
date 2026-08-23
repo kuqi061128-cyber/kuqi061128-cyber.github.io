@@ -1,0 +1,8 @@
+# 超过 GitHub 单文件 100MB 上限的安装包不入库：
+# 部署时请到仓库 Releases 上传该包，再把 content/works/01-dsh-desktop.js
+# 里的 file 字段改成 Release 下载链接（或网盘链接）
+downloads/*.zip
+
+# 系统杂项
+Thumbs.db
+.DS_Store
