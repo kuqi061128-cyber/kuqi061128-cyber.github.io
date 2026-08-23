@@ -128,6 +128,15 @@
   .quote-from { color: var(--muted); font-size: 12px; text-align: right; margin-top: 8px; }
 
   /* ================= 中栏：内容区 ================= */
+  /* 视图切换动画：整块内容淡入上移，卡片级子元素依次浮现（stagger） */
+  .view-enter { animation: viewEnter .3s ease; }
+  .view-enter > * { animation: viewFade .3s ease backwards; }
+  .view-enter > *:nth-child(2) { animation-delay: .05s; }
+  .view-enter > *:nth-child(3) { animation-delay: .1s; }
+  .view-enter > *:nth-child(4) { animation-delay: .15s; }
+  .view-enter > *:nth-child(n+5) { animation-delay: .2s; }
+  @keyframes viewEnter { from { opacity: 0; transform: translateY(14px); } }
+  @keyframes viewFade { from { opacity: 0; } }
   .view-head {
     display: flex; justify-content: space-between; align-items: center;
     gap: 12px; margin-bottom: 18px; flex-wrap: wrap;
@@ -794,6 +803,8 @@ function route() {
     if (sec) { setActiveTab(sec.id); sec.render(mainView, CTX); setPageTitle(sec.label); }
     else { setActiveTab("home"); renderHome(); setPageTitle(null); }
   }
+  /* 视图切换动画：每次路由变化重置动画类（强制回流重播） */
+  mainView.classList.remove("view-enter"); void mainView.offsetWidth; mainView.classList.add("view-enter");
   window.scrollTo(0, 0);
 }
 
