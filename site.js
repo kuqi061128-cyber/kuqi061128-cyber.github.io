@@ -11,7 +11,7 @@ window.BLOG_SITE = {
   intro: "一位电子兴趣爱好者喵，无聊时就会捣鼓些莫名其妙的东西喵。",  // 首页横幅简介，留空 "" 则不显示
 
   /* 头像 */
-  avatar: "assets/img/preview.gif",      // 头像图片路径（支持 PNG/JPG/GIF 动图）；留空 "" 则显示名字首字圆形占位
+  avatar: "assets/img/preview.gif?v=2",  // 头像图片路径（支持 PNG/JPG/GIF 动图）；留空 "" 则显示名字首字圆形占位
 
   /* 背景 */
   backgroundVideo: "assets/background.mp4?v=2",  // 动态视频背景（mp4/webm，静音循环播放）；留空 "" 则用静态背景图。换视频文件后把 v=2 改成 v=3 可强制访客刷新缓存

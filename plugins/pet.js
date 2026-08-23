@@ -17,9 +17,9 @@
   const DIR = "plugins/pet/";
   /* 形象配置：idle=待机图 touch=被点击后的回复图 full=是否圆形照片框 */
   const BODY = {
-    gif:    { idle: DIR + "idle.gif",  touch: DIR + "touch.gif", full: false, sayInPic: true },
-    photo:  { idle: DIR + "body.jpg",  touch: DIR + "body.jpg",  full: true },
-    whale:  { idle: DIR + "alt.png",   touch: DIR + "rua.gif",   full: false },
+    gif:    { idle: DIR + "idle.gif?v=2",  touch: DIR + "touch.gif?v=2", full: false, sayInPic: true },
+    photo:  { idle: DIR + "body.jpg?v=2",  touch: DIR + "body.jpg?v=2",  full: true },
+    whale:  { idle: DIR + "alt.png?v=2",   touch: DIR + "rua.gif?v=2",   full: false },
   };
   const BODY_KEYS = ["gif", "photo", "whale"];
   const SOUNDS = {
@@ -38,7 +38,7 @@
     ["谢谢你来看我们喵！", 1],
     ["喵呜～", 1],
   ];
-  const GIF = DIR + "rua.gif";
+  const GIF = DIR + "rua.gif?v=2";
   const CHAT_MS = 5000;   // 聊天状态持续时间（参照鲸鱼挂件：气泡 5 秒自动收起）
 
   /* touch.gif 画面里自带气泡框（像素实测：水平 6%~72%、垂直 8%~47%）
