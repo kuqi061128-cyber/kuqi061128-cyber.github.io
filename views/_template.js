@@ -29,7 +29,7 @@
         '<div class="view-head"><h2 class="view-title">🧩 新分区</h2></div>' +
         '<div class="post-card"><h4>这里是新分区的内容</h4>' +
         '<p class="post-sum">可用的样式类：post-card（卡片）、works-grid（网格）、' +
-        'board-form（表单）、empty（空状态）等，参考 views/board.js 与 index.html 的用法。</p></div>';
+        'widget（小工具卡片）、empty（空状态）等，参考 views/board.js 与 index.html 的用法。</p></div>';
     },
   };
 
