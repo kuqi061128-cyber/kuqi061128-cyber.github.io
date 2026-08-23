@@ -13,10 +13,10 @@ window.BLOG_SITE = {
   description: "Kuqi 的个人博客：分享教程、随笔、作品与下载。",  // 站点简介（搜索引擎和分享卡片摘要）
 
   /* 头像 */
-  avatar: "assets/img/preview.gif?v=2",  // 头像图片路径（支持 PNG/JPG/GIF 动图）；留空 "" 则显示名字首字圆形占位
+  avatar: "assets/img/preview.gif?v=3",  // 头像图片路径（支持 PNG/JPG/GIF 动图）；留空 "" 则显示名字首字圆形占位
 
   /* 背景 */
-  backgroundVideo: "assets/background.mp4?v=3",  // 动态视频背景（mp4/webm，静音循环播放）；留空 "" 则用静态背景图。换视频文件后把 v=3 改成 v=4 可强制访客刷新缓存
+  backgroundVideo: "assets/background.mp4?v=4",  // 动态视频背景（mp4/webm，静音循环播放）；留空 "" 则用静态背景图。换视频文件后把 v=4 改成 v=5 可强制访客刷新缓存
   background: "assets/background.jpg",       // 静态背景图（视频未设置或加载失败时的回退）
   backgroundDim: 0.6,                        // 压暗程度 0~1：越大背景越淡、文字越清晰
   cardOpacity: 0.5,                         // 卡片暗层浓度 0~1：越小卡片越透（背景更明显），越大文字区域越实
