@@ -386,6 +386,32 @@
     font-size: 13px; border-top: 1px solid var(--line);
   }
 
+  /* ---- 主题切换按钮 ---- */
+  .theme-btn {
+    width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--card); color: var(--text); font-size: 15px; cursor: pointer;
+    transition: .2s; flex: none; line-height: 1;
+  }
+  .theme-btn:hover { border-color: var(--accent); transform: rotate(15deg); }
+
+  /* ---- 亮色主题（html[data-theme="light"] 时整套变量翻转为浅色） ---- */
+  html[data-theme="light"] {
+    --bg: #f1f5f9;
+    --card: rgba(255, 255, 255, var(--card-opacity, 0.65));
+    --text: #1e293b;
+    --muted: #64748b;
+    --accent: #0284c7;
+    --accent2: #6366f1;
+    --line: rgba(15, 23, 42, 0.12);
+    --pink: #db2777;
+  }
+  html[data-theme="light"] body::after { background: rgba(241, 245, 249, var(--bg-dim)); }
+  html[data-theme="light"] nav { background: rgba(255, 255, 255, .78); }
+  html[data-theme="light"] .qm-input,
+  html[data-theme="light"] .board-form input,
+  html[data-theme="light"] .board-form textarea { background: rgba(255, 255, 255, .55); }
+  html[data-theme="light"] .bp-body.img-full { background: rgba(255, 255, 255, .5); }
+
   /* ================= 响应式 ================= */
   @media (max-width: 1120px) {
     .layout { grid-template-columns: 250px minmax(0, 1fr); }
@@ -414,6 +440,7 @@
   <div class="nav-inner">
     <div class="logo" id="logo"></div>
     <div class="tabs" id="navTabs"></div>
+    <button class="theme-btn" id="themeBtn" title="切换亮色主题">☀️</button>
   </div>
 </nav>
 
@@ -793,6 +820,23 @@ function renderNavTabs() {
   $("navTabs").innerHTML = items.map(i =>
     '<a class="tab" data-view="' + i.id + '" href="#/' + i.id + '">' + i.label + '</a>').join("");
 }
+
+/* ================= 亮/暗主题切换（选择存访客本地，默认暗色） ================= */
+function applyTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  const btn = $("themeBtn");
+  if (btn) {
+    btn.textContent = t === "light" ? "🌙" : "☀️";
+    btn.title = t === "light" ? "切换到暗色主题" : "切换到亮色主题";
+  }
+}
+let theme = storeGet("dsh_theme", "dark");
+applyTheme(theme);
+$("themeBtn").addEventListener("click", function () {
+  theme = theme === "light" ? "dark" : "light";
+  storeSet("dsh_theme", theme);
+  applyTheme(theme);
+});
 
 /* ================= 启动 ================= */
 mountPlugins();
