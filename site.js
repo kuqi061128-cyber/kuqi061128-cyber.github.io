@@ -20,7 +20,7 @@ window.BLOG_SITE = {
   background: "assets/background.jpg",       // 静态背景图（视频未设置或加载失败时的回退）
   backgroundDim: 0.6,                        // 压暗程度 0~1：越大背景越淡、文字越清晰
   cardOpacity: 0.5,                         // 卡片暗层浓度 0~1：越小卡片越透（背景更明显），越大文字区域越实
-  cardBlur: 0,                              // 卡片磨砂模糊像素：0 = 清晰透出背景；调大（如 8、16）变磨砂玻璃感
+  cardBlur: 0,                              // 卡片磨砂模糊像素：0 = 完全不启用（性能最好，推荐）；调大（如 8、16）变磨砂玻璃感（会略增渲染负担）
 
   /* 页脚 */
   footer: "© 2026 Kuqi 的博客 · 由 GitHub Pages 免费托管",  // 页脚文字

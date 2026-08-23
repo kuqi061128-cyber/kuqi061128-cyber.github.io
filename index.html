@@ -16,6 +16,9 @@
 <meta property="og:image" content="https://kuqis.cloud/assets/background.jpg">
 <meta name="twitter:card" content="summary">
 <link rel="alternate" type="application/rss+xml" title="Kuqi 博客 RSS" href="rss.xml">
+<!-- 第三方服务预连接：统计/评论脚本握手提前完成，不阻塞也不抢首屏 -->
+<link rel="preconnect" href="https://busuanzi.ibruce.info" crossorigin>
+<link rel="preconnect" href="https://giscus.app">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -65,7 +68,6 @@
   nav {
     position: sticky; top: 0; z-index: 20;
     background: rgba(15, 23, 42, 0.75);
-    backdrop-filter: blur(var(--card-blur, 0px));
     border-bottom: 1px solid var(--line);
   }
   nav .nav-inner {
@@ -101,8 +103,11 @@
     border-radius: 12px; padding: 20px; margin-bottom: 20px;
   }
 
-  /* 卡片磨砂程度由 site.js 的 cardBlur 控制：0 = 清晰透出背景，数值越大越磨砂 */
-  .widget, .banner, .post-card, .post-detail, .work-card {
+  /* 卡片磨砂程度由 site.js 的 cardBlur 控制。
+     仅当 cardBlur > 0 时由 JS 给 <html> 加 .card-blur 类才启用 blur——
+     blur(0px) 也会强制每个卡片建合成层采样背景，是首屏卡顿的元凶之一 */
+  html.card-blur .widget, html.card-blur .banner, html.card-blur .post-card,
+  html.card-blur .post-detail, html.card-blur .work-card {
     backdrop-filter: blur(var(--card-blur, 0px));
     -webkit-backdrop-filter: blur(var(--card-blur, 0px));
   }
@@ -187,6 +192,11 @@
   .sec-head a:hover { color: var(--accent); }
 
   /* ---- 文章卡片 ---- */
+  /* 视口外的卡片/挂件跳过渲染，滚到附近才画（首屏布局绘制成本大降，auto 会记住真实高度不跳滚动） */
+  .post-card, .work-card, .link-card, .col-left .widget, .col-right .widget {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 200px;
+  }
   .post-card {
     background: var(--card); border: 1px solid var(--line); border-radius: 12px;
     padding: 20px 22px; margin-bottom: 16px; transition: .2s;
@@ -258,8 +268,6 @@
     display: flex; gap: 14px; align-items: flex-start;
     background: var(--card); border: 1px solid var(--line); border-radius: 12px;
     padding: 16px; text-decoration: none; transition: .2s;
-    backdrop-filter: blur(var(--card-blur, 0px));
-    -webkit-backdrop-filter: blur(var(--card-blur, 0px));
   }
   .link-card:hover { transform: translateY(-4px); border-color: rgba(56,189,248,.4); }
   .link-icon {
@@ -425,7 +433,7 @@
 <div class="toast" id="toast"></div>
 
 <!-- ================= 站点信息：博客名 / 头像 / 介绍 / 背景图 / 页脚，改 site.js 即可 ================= -->
-<script src="site.js?v=6"></script>
+<script src="site.js?v=7"></script>
 
 <!-- ================= 插件库：一个插件一个文件，升级/更换/下线只动 plugins/ 目录 ================= -->
 <script>
@@ -540,8 +548,13 @@ document.getElementById("siteFooter").textContent = SITE.footer;
 document.documentElement.style.setProperty("--bg-image", 'url("' + SITE.background + '")');
 document.documentElement.style.setProperty("--bg-dim", String(SITE.backgroundDim));
 if (SITE.cardOpacity != null) document.documentElement.style.setProperty("--card-opacity", String(SITE.cardOpacity));
-if (SITE.cardBlur != null) document.documentElement.style.setProperty("--card-blur", String(SITE.cardBlur));
-/* 视频背景体积大：移动端不加载（用静态背景图），桌面端也等页面加载完再拉，首屏不被大视频阻塞 */
+/* 磨砂只在 >0 时启用：blur(0px) 也会给每个卡片强制建合成层采样背景，白白拖慢首屏 */
+if (SITE.cardBlur > 0) {
+  document.documentElement.classList.add("card-blur");
+  document.documentElement.style.setProperty("--card-blur", SITE.cardBlur + "px");   /* 必须带 px，否则 blur(N) 非法整条失效 */
+}
+/* 视频背景体积大：移动端不加载（用静态背景图）；桌面端等页面加载完、
+   再避开首屏交互期（load 后 + 空闲时机）才拉起，视频解码不和滚动/入场动画抢主线程 */
 if (SITE.backgroundVideo) {
   var bgV = document.getElementById("bgVideo");
   if (window.matchMedia("(min-width: 781px)").matches) {
@@ -551,8 +564,19 @@ if (SITE.backgroundVideo) {
       var bgPlay = bgV.play();
       if (bgPlay && bgPlay.catch) bgPlay.catch(function () {});
     };
-    if (document.readyState === "complete") bgEnable();
-    else window.addEventListener("load", bgEnable);
+    var bgStart = function () {
+      setTimeout(function () {
+        (window.requestIdleCallback || function (f) { setTimeout(f, 300); })(bgEnable);
+      }, 800);
+    };
+    if (document.readyState === "complete") bgStart();
+    else window.addEventListener("load", bgStart);
+    /* 标签页切走时暂停解码省资源，切回来继续 */
+    document.addEventListener("visibilitychange", function () {
+      if (!bgV.src) return;
+      if (document.hidden) bgV.pause();
+      else { var p = bgV.play(); if (p && p.catch) p.catch(function () {}); }
+    });
   }
 }
 
