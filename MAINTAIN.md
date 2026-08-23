@@ -49,6 +49,34 @@ git push
 
 **重要——缓存版本号规则**：改了 JS 文件或图片/视频后，如果访客反馈"看不到变化"，给 index.html 里对应 `<script>` 标签的 `?v=数字` 加一（如 `pet.js?v=15` → `?v=16`），让浏览器重新下载。site.js 里的头像/背景同理（`?v=` 写在 site.js 内部路径上）。
 
+**口诀**：改了「已存在的文件」内容 → 升版本号；新增文件 → 不用（没人缓存过它）。注意 site.js 自己也有版本号（index.html 里 `site.js?v=N`），改它的内容同样要升。
+
+### 实操举例
+
+**例 A：改了桌宠台词（动了 plugins/pet.js）**
+1. 改文件保存；2. index.html 里搜 `pet.js`，把 `?v=15` 改 `?v=16`；
+3. 文件夹右键 → Open Git Bash here，执行：
+
+```
+git add -A
+git commit -m "桌宠台词更新"
+git push
+```
+
+**例 B：只改了 site.js 里的签名**
+同样要在 index.html 里把 `site.js?v=6` 升成 `?v=7`（否则老访客最多延迟 10 分钟才看到），然后 git 三连。
+
+**例 C：发新文章全流程**
+
+```
+cp content/posts/_template.js content/posts/2026-09-01-my-post.js   # 复制模板后用编辑器填内容
+# index.html「内容库引入区」加一行 <script src="content/posts/2026-09-01-my-post.js"></script>（新文件不用 ?v=）
+node tools/build-rss.js                                              # 更新 RSS
+git add -A && git commit -m "新文章：标题" && git push
+```
+
+第一次自己 push 时会弹 GitHub 登录窗口，浏览器授权一次后 Windows 会记住，以后不再问。
+
 ## 七、留言板（giscus）维护
 
 留言存在仓库的 **Discussions** 标签里，去仓库页面点 Discussions 即可置顶/回复/删除。配置在 site.js 的 `giscus` 段（更换仓库才需要动）。
