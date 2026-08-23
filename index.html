@@ -456,7 +456,7 @@
   // 记录当前执行的 js 文件所在的内容目录（如 content/works/01-dsh-desktop/），
   // 作品/文章里写裸图片文件名时自动定位到自己的文件夹
   function BLOG_scriptDir(base) {
-    var s = document.currentScript, m = s && s.src ? s.src.match(/([^\/\\]+)\.js\s*$/) : null;
+    var s = document.currentScript, m = s && s.src ? s.src.match(/([^\/\\]+?)\.js(?:[?#].*)?$/) : null;
     return m ? base + m[1] + "/" : "";
   }
   window.registerPost = function (def) {
