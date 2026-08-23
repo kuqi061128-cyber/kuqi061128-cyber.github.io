@@ -4,15 +4,15 @@
 registerWork({
   id: 1,                    // 唯一编号，链接 #/work/1 依赖它，发布后不要再改
   title: "DSH 桌面应用",
-  desc: "封装成桌面工具Deepseek Harness，当前版本 v1.2.0。",
+  desc: "封装成桌面工具Deepseek Harness，当前版本 v1.7.0。",
   tag: "桌面应用",
   emoji: "🖥️",
   cover: "linear-gradient(135deg,#38bdf8,#818cf8)",
   coverImg: "icon.png",   // 展示图：图片在本作品自己的文件夹里，直接写文件名
-  date: "2026-08-22",
-  file: "downloads/dsh-desktop-v1.2.0.zip",  // 下载包：填了就出现下载按钮
-  version: "v1.2.0",
-  size: "149 MB",
+  date: "2026-08-23",
+  file: "https://github.com/kuqi061128-cyber/kuqi061128-cyber.github.io/releases/download/v1.7.0/DSH-v1.7.0.zip",  // 下载包走 GitHub Releases（超过100MB 的包不入 git 仓库）
+  version: "v1.7.0",
+  size: "144 MB",
   detail: `
     <p>DSH 桌面应用是一点击即启动的Deepseek Harness桌面工具，安装简单、开箱即用。</p>
     <img src="simple_1.jpg" alt="应用预览图">
@@ -26,6 +26,7 @@ registerWork({
     <h3>下载与安装</h3>
     <p>点击上方「立即下载」保存压缩包，解压后运行其中的安装程序，按提示完成安装即可。建议安装前关闭旧版本。</p>
     <h3>更新日志</h3>
-    <p>v1.2.0：修复一批已知问题，优化整体稳定性。</p>
+    <p>v1.6.0：增加了下载启动后检测当前环境是否符合，没有则一键配置下载</p>
+    <p>v1.7.0：修复一批已知问题，优化整体稳定性。</p>
   `,
 });

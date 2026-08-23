@@ -6,3 +6,6 @@ downloads/*.zip
 # 系统杂项
 Thumbs.db
 .DS_Store
+
+# 开发工具缓存
+.vs/
