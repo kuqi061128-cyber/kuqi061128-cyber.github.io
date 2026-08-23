@@ -21,7 +21,15 @@
 - 更新作品（发新版本）：只改它自己那个文件——换 `file` 路径、改 `version`、在 `detail` 补更新日志。
 - 下载包：小于 100MB 放 `downloads/` 目录；**超过 100MB 传 GitHub Releases**（git 推不上去），把附件链接填进 `file` 字段，详见 DEPLOY.md 第四步。
 
-## 四、管理插件（左栏/右栏小工具）
+## 四、管理推荐网站（"网站推荐"页）
+
+推荐网站一个站一个文件，全在 `content/links/` 目录：
+
+- **加站**：复制 `content/links/_template.js` 重命名（如 `09-example.js`），填网站名/地址/推荐语/标签/颜色，再在 index.html「内容库引入区」加一行 `<script src="content/links/09-example.js"></script>`；
+- **删站**：删掉对应 js 文件后，**必须同时删掉 index.html 里对应的那行 `<script>`**（否则浏览器控制台报 404）；
+- **改站**：直接改它自己的文件，别的都不用动。
+
+## 五、管理插件（左栏/右栏小工具）
 
 插件全部在 `plugins/` 目录，一插件一文件：
 
@@ -31,11 +39,11 @@
 
 桌宠素材和台词都在 `plugins/pet.js` 顶部配置区（BODY 形象、TALK 台词表、SAY 气泡文字位置）。
 
-## 五、加一个导航分区（如"相册"）
+## 六、加一个导航分区（如"相册"）
 
 复制 `views/_template.js` 重命名（如 `gallery.js`），改 `id`/`label`/`render`，在 index.html「分区模块引入区」加一行引入，导航自动出现新标签。
 
-## 六、更新到 GitHub（日常三步）
+## 七、更新到 GitHub（日常三步）
 
 在本目录（my-site）打开终端：
 
@@ -77,11 +85,11 @@ git add -A && git commit -m "新文章：标题" && git push
 
 第一次自己 push 时会弹 GitHub 登录窗口，浏览器授权一次后 Windows 会记住，以后不再问。
 
-## 七、留言板（giscus）维护
+## 八、留言板（giscus）维护
 
 留言存在仓库的 **Discussions** 标签里，去仓库页面点 Discussions 即可置顶/回复/删除。配置在 site.js 的 `giscus` 段（更换仓库才需要动）。
 
-## 八、常见问题
+## 九、常见问题
 
 | 现象 | 处理 |
 |---|---|
