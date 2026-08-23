@@ -234,6 +234,8 @@ To https://github.com/kuqi061128-cyber/kuqi061128-cyber.github.io.git
 |---|---|
 | 改了代码线上没变化 | ① git 三连做了吗 ② 等 2 分钟 ③ `?v=` 升了吗 |
 | push 被拒 / rejected | `git pull --rebase` 后再 push |
+| push 报 `Could not connect to github.com` | github.com 被网络污染（api 通道通常还通）。应急：`python tools/api-push.py ghp_你的令牌` 走 API 通道推；恢复后跑一次 `git pull --rebase && git push` 归位 |
+| push/pull 报 `401 Bad credentials` | 令牌过期或被撤销：GitHub → Settings → Developer settings → Personal access tokens 重新生成一个，用新令牌操作 |
 | 文章打不开/内容串了 | `id` 重复，或改了已发布的 `id` |
 | 图片裂图 | 检查文件名大小写、图片是否在与 js 同名的文件夹里 |
 | 上传超 100MB 失败 | 走 Releases（见第四节） |
