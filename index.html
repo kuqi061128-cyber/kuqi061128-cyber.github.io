@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DSH 博客</title>
 <link rel="icon" href="assets/img/dsh.ico">
+<!-- ======== SEO / 分享卡片（微信/QQ 抓取的是这里的静态值；日常改动在 site.js 的 url/description 同步） ======== -->
+<link rel="canonical" href="https://kuqis.cloud/">
+<meta name="description" content="Kuqi 的个人博客：分享教程、随笔、作品与下载。一位电子兴趣爱好者，无聊时就会捣鼓些莫名其妙的东西喵。">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kuqi 博客">
+<meta property="og:title" content="Kuqi 博客 · 来玩卡拉彼丘谢谢喵！">
+<meta property="og:description" content="Kuqi 的个人博客：分享教程、随笔、作品与下载。">
+<meta property="og:url" content="https://kuqis.cloud/">
+<meta property="og:image" content="https://kuqis.cloud/assets/background.jpg">
+<meta name="twitter:card" content="summary">
+<link rel="alternate" type="application/rss+xml" title="Kuqi 博客 RSS" href="rss.xml">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -461,7 +472,7 @@
 <div class="toast" id="toast"></div>
 
 <!-- ================= 站点信息：博客名 / 头像 / 介绍 / 背景图 / 页脚，改 site.js 即可 ================= -->
-<script src="site.js?v=4"></script>
+<script src="site.js?v=5"></script>
 
 <!-- ================= 插件库：一个插件一个文件，升级/更换/下线只动 plugins/ 目录 ================= -->
 <script>
@@ -471,7 +482,7 @@
 <script src="plugins/clock.js"></script>
 <script src="plugins/quote.js"></script>
 <script src="plugins/pet.js?v=14"></script>
-<script src="plugins/site-stats.js?v=2"></script>
+<script src="plugins/site-stats.js?v=3"></script>
 <script src="plugins/hot-posts.js"></script>
 <script src="plugins/categories.js"></script>
 <script src="plugins/tag-cloud.js"></script>
@@ -550,6 +561,7 @@ const state = {
   likes: storeGet("dsh_likes", 0),
   liked: storeGet("dsh_liked", false),
   viewExtra: storeGet("dsh_views", {}),   // 每篇文章的额外浏览量
+  viewed: storeGet("dsh_viewed", {}),     // 本访客已计过浏览量的文章（每篇只计一次）
 };
 
 function articleViews(id) {
@@ -561,6 +573,17 @@ function articleViews(id) {
 document.getElementById("logo").innerHTML =
   SITE.name + "<span>.blog</span> · " + SITE.tagline;
 document.title = SITE.name + " 博客";
+/* SEO meta 与 site.js 配置同步（<head> 里的静态值供不执行 JS 的爬虫，这里是给浏览器/执行 JS 的爬虫） */
+(function () {
+  const set = (sel, val) => { const m = document.querySelector(sel); if (m && val) m.setAttribute("content", val); };
+  set('meta[name="description"]', SITE.description);
+  set('meta[property="og:title"]', SITE.name + " 博客 · " + SITE.tagline);
+  set('meta[property="og:site_name"]', SITE.name + " 博客");
+  set('meta[property="og:description"]', SITE.description);
+  set('meta[property="og:url"]', SITE.url);
+  const canon = document.querySelector('link[rel="canonical"]');
+  if (canon && SITE.url) canon.setAttribute("href", SITE.url);
+})();
 document.getElementById("siteFooter").textContent = SITE.footer;
 document.documentElement.style.setProperty("--bg-image", 'url("' + SITE.background + '")');
 document.documentElement.style.setProperty("--bg-dim", String(SITE.backgroundDim));
@@ -737,8 +760,12 @@ function renderArticles(tagFilter) {
 function renderPost(id) {
   const a = ARTICLES.find(x => x.id === id);
   if (!a) { renderArticles(); return; }
-  state.viewExtra[id] = (state.viewExtra[id] || 0) + 1;
-  storeSet("dsh_views", state.viewExtra);
+  if (!state.viewed[id]) {          // 每访客每篇只计一次，反复刷新不刷浏览量
+    state.viewed[id] = true;
+    state.viewExtra[id] = (state.viewExtra[id] || 0) + 1;
+    storeSet("dsh_views", state.viewExtra);
+    storeSet("dsh_viewed", state.viewed);
+  }
   refreshPlugins();
   mainView.innerHTML =
     '<a class="back-link" href="#/articles">← 返回文章列表</a>' +
@@ -795,19 +822,37 @@ function setActiveTab(view) {
     t.classList.toggle("active", t.dataset.view === view));
 }
 
+/* 每个路由独立页面标题（浏览器标签页 / 收藏 / 历史记录里能看到具体页名） */
+function setPageTitle(sub) {
+  document.title = sub ? sub + " - " + SITE.name + " 博客" : SITE.name + " 博客";
+}
+
 function route() {
   const hash = location.hash.replace(/^#\/?/, "");
   const parts = hash.split("/").filter(Boolean).map(decodeURIComponent);
   const view = parts[0] || "home";
   articleKeyword = "";
-  if (view === "post" && parts[1]) { setActiveTab("articles"); renderPost(Number(parts[1])); }
-  else if (view === "articles") { setActiveTab("articles"); renderArticles(parts[1] === "tag" ? parts[2] : null); }
-  else if (view === "work" && parts[1]) { setActiveTab("works"); renderWork(Number(parts[1])); }
-  else if (view === "works") { setActiveTab("works"); renderWorks(); }
+  if (view === "post" && parts[1]) {
+    setActiveTab("articles"); renderPost(Number(parts[1]));
+    const a = ARTICLES.find(x => x.id === Number(parts[1]));
+    setPageTitle(a ? a.title : "文章");
+  }
+  else if (view === "articles") {
+    setActiveTab("articles");
+    const tag = parts[1] === "tag" ? parts[2] : null;
+    renderArticles(tag);
+    setPageTitle(tag ? "标签：" + tag : "全部文章");
+  }
+  else if (view === "work" && parts[1]) {
+    setActiveTab("works"); renderWork(Number(parts[1]));
+    const w = WORKS.find(x => x.id === Number(parts[1]));
+    setPageTitle(w ? w.title : "作品");
+  }
+  else if (view === "works") { setActiveTab("works"); renderWorks(); setPageTitle("我的作品"); }
   else {
     const sec = BLOG_SECTIONS.find(s => s.id === view);
-    if (sec) { setActiveTab(sec.id); sec.render(mainView, CTX); }
-    else { setActiveTab("home"); renderHome(); }
+    if (sec) { setActiveTab(sec.id); sec.render(mainView, CTX); setPageTitle(sec.label); }
+    else { setActiveTab("home"); renderHome(); setPageTitle(null); }
   }
   window.scrollTo(0, 0);
 }

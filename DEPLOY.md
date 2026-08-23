@@ -51,6 +51,8 @@ git push
 
 推送后一两分钟线上自动更新。改了 JS 文件访客看不到变化时，让对方 Ctrl+F5，或给对应 `<script>` 标签加 `?v=数字`。
 
+**发过新文章后记得更新 RSS**：`node tools/build-rss.js`（读 content/posts/ 重新生成 rss.xml），生成完一起提交。
+
 ## 国内访客访问慢？（可选优化）
 
 GitHub Pages 在国内速度时好时坏。域名 DNS 托管到 **Cloudflare**（免费）并开启代理（橙色云），SSL/TLS 模式设为 **Full**，通常能有明显改善。

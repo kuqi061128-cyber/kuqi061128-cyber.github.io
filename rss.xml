@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Kuqi 博客</title>
+    <link>https://kuqis.cloud/</link>
+    <atom:link href="https://kuqis.cloud/rss.xml" rel="self" type="application/rss+xml"/>
+    <description>Kuqi 的个人博客：分享教程、随笔、作品与下载。</description>
+    <language>zh-CN</language>
+    <lastBuildDate>Sun, 23 Aug 2026 10:44:05 GMT</lastBuildDate>
+    <item>
+      <title>如何发布一篇新文章或新作品</title>
+      <link>https://kuqis.cloud/#/post/5</link>
+      <guid>https://kuqis.cloud/#/post/5</guid>
+      <pubDate>Fri, 21 Aug 2026 16:00:00 GMT</pubDate>
+      <description>三步发布：复制模板 → 填内容 → 在 index.html 加一行引入。你正在读的这篇就是这样发布的。</description>
+    </item>
+    <item>
+      <title>欢迎来到我的新博客</title>
+      <link>https://kuqis.cloud/#/post/1</link>
+      <guid>https://kuqis.cloud/#/post/1</guid>
+      <pubDate>Wed, 19 Aug 2026 16:00:00 GMT</pubDate>
+      <description>博客全新上线：左边是互动小插件，中间是文章和作品，右边是站点统计，顶部可以切换不同分区。</description>
+    </item>
+    <item>
+      <title>用纯 HTML/CSS/JS 搭建零依赖博客</title>
+      <link>https://kuqis.cloud/#/post/3</link>
+      <guid>https://kuqis.cloud/#/post/3</guid>
+      <pubDate>Tue, 11 Aug 2026 16:00:00 GMT</pubDate>
+      <description>不装 Node、不装依赖，一个 HTML 文件搞定路由、渲染和本地存储，随便扔到 GitHub Pages 就能上线。</description>
+    </item>
+    <item>
+      <title>八月小结：把想法做成东西</title>
+      <link>https://kuqis.cloud/#/post/4</link>
+      <guid>https://kuqis.cloud/#/post/4</guid>
+      <pubDate>Tue, 04 Aug 2026 16:00:00 GMT</pubDate>
+      <description>这个月折腾了不少小东西，桌面应用更新了一版，顺手把搁置很久的博客也搭起来了。</description>
+    </item>
+  </channel>
+</rss>

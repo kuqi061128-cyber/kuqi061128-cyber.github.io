@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 站点用 hash 路由（#/articles 等），搜索引擎只把根地址当独立页面，故只列根地址；
+     文章内容通过 rss.xml 供订阅器和爬虫发现 -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://kuqis.cloud/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
