@@ -112,7 +112,7 @@
       "border-radius:6px;font-size:12px;padding:2px 6px;cursor:pointer}" +
       ".bp-say{position:absolute;display:flex;align-items:center;justify-content:center;" +
       "text-align:center;font-weight:700;color:#4a3728;line-height:1.3;" +
-      "font-size:calc(9px*var(--bp-scale,1));pointer-events:none;opacity:0;transition:.15s;z-index:2;" +
+      "font-size:calc(7px*var(--bp-scale,1));pointer-events:none;opacity:0;transition:.15s;z-index:2;" +
       "word-break:break-all}" +
       ".bp-say.show{opacity:1}";
     document.head.appendChild(st);
