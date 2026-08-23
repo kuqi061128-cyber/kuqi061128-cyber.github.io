@@ -15,13 +15,14 @@
 
     render(el, ctx) {
       const g = ctx.SITE.giscus || {};
-      const ghLink = "https://github.com/" + (g.repo || "") + "/discussions?discussions_q=guestbook";
+      /* 直达留言讨论帖本体（guestbook = #1）。若日后重建过讨论帖，改这里的编号 */
+      const ghLink = "https://github.com/" + (g.repo || "") + "/discussions/1";
       el.innerHTML =
         '<div class="view-head"><h2 class="view-title">💬 留言板</h2></div>' +
         '<div class="widget" style="padding:6px">' +
         '<div class="giscus" style="margin:14px"></div>' +
         '<div style="text-align:right;padding:0 14px 12px;font-size:12px">' +
-        '<a href="' + ghLink + '" target="_blank" rel="noopener" style="color:var(--muted)">评论发不出去？在 GitHub 上参与讨论 →</a></div>' +
+        '<a href="' + ghLink + '" target="_blank" rel="noopener" style="color:var(--muted)">评论发不出去？打开这个帖子，拉到底部框里写 →</a></div>' +
         '</div>';
       const box = el.querySelector(".giscus");
       if (!g.repo || !g.repoId || !g.categoryId) {
