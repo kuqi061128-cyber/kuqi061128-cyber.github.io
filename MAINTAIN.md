@@ -35,6 +35,31 @@
 
 文章插图：建与 js 文件同名的文件夹（`content/posts/2026-09-01-my-post/`），图片放里面，正文写裸文件名 `<img src="1.png">` 即可。
 
+### 举例：发一篇《九月小结》
+
+新文件 `content/posts/2026-09-10-sept-notes.js` 的内容：
+
+```js
+registerPost({
+  id: 6,                        // 现有用过 1~5，所以用 6
+  title: "九月小结",
+  date: "2026-09-10",
+  category: "随笔",
+  tags: ["随笔"],
+  views: 0,
+  summary: "九月做了什么、想了什么。",
+  content: `
+    <p>第一段正文……</p>
+    <h3>小标题</h3>
+    <p>更多内容……</p>
+  `,
+});
+```
+
+index.html「内容库引入区」最后加：`<script src="content/posts/2026-09-10-sept-notes.js"></script>`
+
+然后终端：`node tools/build-rss.js` → git 三连。刷新首页，「最新文章」第一张就是它。
+
 ## 三、发新作品 / 更新作品版本
 
 **新作品**：复制 `content/works/_template.js` 重命名（如 `02-my-app.js`），填内容（封面/详情图放同名文件夹），index.html 加引入行，git 三连。
@@ -46,6 +71,21 @@
 - `detail` 里的「更新日志」加一行新版本的说明
 - index.html 里该作品的 `?v=` 加一
 - git 三连
+
+### 举例：DSH 应用从 v1.7.0 升到 v1.8.0，改哪些地方
+
+打开 `content/works/01-dsh-desktop.js`，一共改四处（改前 → 改后）：
+
+```
+desc:  "…当前版本 v1.7.0。"            →  "…当前版本 v1.8.0。"
+file:  "…/download/v1.7.0/DSH-v1.7.0.zip"  →  "…/download/v1.8.0/DSH-v1.8.0.zip"
+version: "v1.7.0",                     →  "v1.8.0",
+size:  "144 MB",                       →  "151 MB",
+```
+
+`detail` 的「更新日志」最后加一行：`<p>v1.8.0：新增了 xx 功能。</p>`
+
+再到 index.html 把 `01-dsh-desktop.js?v=3` 改成 `?v=4`，git 三连。
 
 ## 四、大文件上传（>100MB 必看，走 GitHub Releases）
 
@@ -67,6 +107,28 @@ git 单文件上限 100MB，安装包超了会被拒收（`downloads/*.zip` 已�
 - **删站**：删文件 + **必须同时删 index.html 里对应那行 `<script>`**（否则控制台报 404）；
 - **改站**：直接改它自己的文件，并在 index.html 里给它加/升 `?v=`。
 
+### 举例：添加「硅基流动」（真实发生过）
+
+新文件 `content/links/05-siliconflow.js`：
+
+```js
+registerSite({
+  name: "硅基流动",
+  url: "https://siliconflow.cn",
+  desc: "国内直连的大模型 API 云服务，DeepSeek 等开箱即用。",
+  tag: "AI",
+  color: "#7c3aed",
+});
+```
+
+index.html 引入区加：`<script src="content/links/05-siliconflow.js"></script>` → git 三连。
+
+### 举例：删掉「哔哩哔哩」
+
+① 删除文件 `content/links/03-bilibili.js`；
+② index.html 里删掉 `<script src="content/links/03-bilibili.js"></script>` 这一行（**这步最容易忘**）；
+③ git 三连。
+
 ## 六、管理插件（左右栏小工具）
 
 插件一文件一插件，在 `plugins/` 目录：
@@ -76,9 +138,50 @@ git 单文件上限 100MB，安装包超了会被拒收（`downloads/*.zip` 已�
 - **排序**：改 `order`（小靠前）；**换栏**：改 `column`（`left` / `right` / `float` 浮动）；
 - **改代码**（如桌宠台词在 `plugins/pet.js` 顶部的 `TALK` 表）：改完在 index.html 升该文件 `?v=`。
 
+### 举例：改桌宠台词（最常用）
+
+`plugins/pet.js` 顶部找到 `TALK` 表，照格式加一行（数字是权重，越大越常出现）：
+
+```js
+const TALK = [
+  ["摸摸我，给博客点个赞喵！", 3],
+  ["今天也要元气满满喵～", 2],
+  ["新台词放这里喵！", 2],      // ← 新加的
+  ...
+];
+```
+
+然后 index.html 里 `pet.js?v=15` → `?v=16` → git 三连。
+
+### 举例：下线「标签云」
+
+`plugins/tag-cloud.js` 里把 `enabled: true` 改成 `enabled: false` → git 三连（想恢复改回 true 即可）。
+
 ## 七、加一个导航分区（如"相册"）
 
 复制 `views/_template.js` 重命名（如 `gallery.js`），改 `id` / `label` / `render`，index.html「分区模块引入区」加一行，导航自动出现新标签（地址 `#/gallery`）。
+
+### 举例：加一个「朋友们」分区
+
+新文件 `views/friends.js`（最简可用版）：
+
+```js
+(function () {
+  const S = {
+    id: "friends",      // 路由地址 #/friends
+    label: "朋友们",     // 导航按钮文字
+    order: 50,
+    render(el) {
+      el.innerHTML =
+        '<div class="view-head"><h2 class="view-title">👫 朋友们</h2></div>' +
+        '<div class="post-card"><h4>这里放朋友的主页链接</h4></div>';
+    },
+  };
+  registerSection(S);
+})();
+```
+
+index.html「分区模块引入区」加：`<script src="views/friends.js"></script>` → 刷新后导航多出「朋友们」。
 
 ## 八、留言板（giscus）维护
 
@@ -98,6 +201,19 @@ git push                      # 第3步：推送到 GitHub，1~2 分钟后线上
 - push 后最后一行输出类似 `main -> main` 即成功；
 - 打开仓库网页（github.com/kuqi061128-cyber/kuqi061128-cyber.github.io），首页最新 commit 是你刚才那句说明；
 - 等 1~2 分钟刷新 kuqis.cloud 看效果。
+
+### 举例：一次完整的操作过程（终端里长这样）
+
+```
+$ git add -A
+$ git commit -m "新文章：九月小结"
+[main 9abc123] 新文章：九月小结
+ 3 files changed, 25 insertions(+)
+$ git push
+Enumerating objects: ...
+To https://github.com/kuqi061128-cyber/kuqi061128-cyber.github.io.git
+   08a23f5..9abc123  main -> main        ← 看到这行 = 成功
+```
 
 **常见情况**：
 - 第一次自己 push 会弹 GitHub 登录窗口，浏览器授权一次后 Windows 记住，以后不再问；
