@@ -14,7 +14,7 @@ window.BLOG_SITE = {
   avatar: "assets/img/preview.gif",      // 头像图片路径（支持 PNG/JPG/GIF 动图）；留空 "" 则显示名字首字圆形占位
 
   /* 背景 */
-  backgroundVideo: "assets/background.mp4",  // 动态视频背景（mp4/webm，静音循环播放）；留空 "" 则用静态背景图
+  backgroundVideo: "assets/background.mp4?v=2",  // 动态视频背景（mp4/webm，静音循环播放）；留空 "" 则用静态背景图。换视频文件后把 v=2 改成 v=3 可强制访客刷新缓存
   background: "assets/background.jpg",       // 静态背景图（视频未设置或加载失败时的回退）
   backgroundDim: 0.6,                        // 压暗程度 0~1：越大背景越淡、文字越清晰
   cardOpacity: 0.5,                         // 卡片暗层浓度 0~1：越小卡片越透（背景更明显），越大文字区域越实
