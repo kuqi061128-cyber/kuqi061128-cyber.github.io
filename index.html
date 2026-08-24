@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="loading">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -63,6 +63,42 @@
   }
 
   a { color: var(--accent); }
+
+  /* ================= 开场加载屏（页面加载完自动淡出） ================= */
+  html.loading { overflow: hidden; }
+  #loader {
+    position: fixed; inset: 0; z-index: 300;
+    background: #0f172a;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity .45s ease;
+  }
+  #loader.hide { opacity: 0; pointer-events: none; }
+  .loader-box { width: min(320px, 78vw); text-align: center; }
+  .loader-stage { position: relative; height: 96px; margin-bottom: 10px; }
+  .loader-runner {
+    position: absolute; bottom: 6px; left: 50%;
+    width: 60px; height: 92px; object-fit: contain;
+    transform: translateX(-50%);
+    transform-origin: 50% 100%;
+    animation: runBob .32s ease-in-out infinite alternate;
+    filter: drop-shadow(0 3px 4px rgba(0,0,0,.45));
+  }
+  @keyframes runBob {   /* 静态素材的"奔跑感"：上下颠簸 + 前倾 */
+    from { transform: translateX(-50%) translateY(0) rotate(6deg); }
+    to   { transform: translateX(-50%) translateY(-7px) rotate(9deg); }
+  }
+  .loader-track {
+    position: relative; height: 8px; border-radius: 4px;
+    background: rgba(255,255,255,.1); overflow: visible;
+  }
+  .loader-fill {
+    position: absolute; inset: 0 auto 0 0; width: 0%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width .25s ease;
+  }
+  .loader-pct { margin-top: 12px; color: #94a3b8; font-size: 13px; letter-spacing: 2px; }
+  @media (prefers-reduced-motion: reduce) { .loader-runner { animation: none; } }
 
   /* ================= 顶部导航（分区切换） ================= */
   nav {
@@ -405,6 +441,15 @@
 </head>
 <body>
 
+<!-- ================= 开场加载屏：小人沿进度条奔跑，加载完淡出 ================= -->
+<div id="loader">
+  <div class="loader-box">
+    <div class="loader-stage"><img class="loader-runner" src="assets/img/runner.png" alt="加载中"></div>
+    <div class="loader-track"><div class="loader-fill" id="loaderFill"></div></div>
+    <div class="loader-pct"><span id="loaderPct">0</span>%</div>
+  </div>
+</div>
+
 <video id="bgVideo" loop muted playsinline preload="none"></video>
 
 <!-- ================= 顶部导航：分区切换 ================= -->
@@ -448,7 +493,7 @@
 <script src="plugins/hot-posts.js"></script>
 <script src="plugins/categories.js"></script>
 <script src="plugins/tag-cloud.js"></script>
-<script src="plugins/reading-aid.js?v=1"></script>
+<script src="plugins/reading-aid.js?v=2"></script>
 
 <!-- ================= 内容库：文章在 content/posts/（一篇一个文件），作品在 content/works.js ================= -->
 <script>
@@ -494,6 +539,41 @@
 <script src="views/links.js"></script>
 
 <script>
+/* ================= 开场加载屏：小人随进度奔跑，真实加载完成即淡出 ================= */
+(function () {
+  var loader = document.getElementById("loader");
+  if (!loader) return;
+  var fill = document.getElementById("loaderFill"),
+      pct = document.getElementById("loaderPct"),
+      runner = loader.querySelector(".loader-runner");
+  var p = 0, done = false;
+  function setP(v) {
+    p = Math.max(p, Math.min(100, v));
+    fill.style.width = p + "%";
+    pct.textContent = Math.round(p);
+    runner.style.left = (8 + p * 0.84) + "%";   /* 小人在轨道 8%~92% 区间随进度前移 */
+  }
+  /* 快速起步 → 渐近逼近 90%，等 window load 事件才冲 100（进度真实反映加载，不做假进度） */
+  (function tick() {
+    if (done) return;
+    setP(90 - (90 - p) * 0.92);
+    setTimeout(tick, 120 + Math.random() * 180);
+  })();
+  function finish() {
+    if (done) return;
+    done = true;
+    setP(100);
+    setTimeout(function () {
+      loader.classList.add("hide");
+      document.documentElement.classList.remove("loading");
+      setTimeout(function () { loader.remove(); }, 500);
+    }, 380);
+  }
+  if (document.readyState === "complete") finish();
+  else window.addEventListener("load", finish);
+  setTimeout(finish, 12000);   /* 保底：某资源卡死时 12 秒后也放行进站 */
+})();
+
 /* ================= 站点配置（在 site.js 文件里修改） ================= */
 const SITE = Object.assign({
   name: "DSH",
@@ -628,7 +708,7 @@ function mountPlugins() {
       const host = floating ? document.body : (cols[p.column] || cols.left);
       const card = document.createElement("div");
       card.className = floating
-        ? ("blog-pet " + (p.className || "")).trim()
+        ? (p.className || "blog-pet")   // 浮动插件可自带类名（如阅读辅助），桌宠默认 blog-pet
         : "widget" + (p.className ? " " + p.className : "");
       card.dataset.plugin = p.id;
       host.appendChild(card);

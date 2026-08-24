@@ -27,6 +27,7 @@
   const P = {
     id: "reading-aid",
     column: "float",
+    className: "ra-host",
     order: 95,
     enabled: true,
 
