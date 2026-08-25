@@ -16,7 +16,9 @@
 | 发一个新作品 | 后台 Content Manager → Work | 同上 |
 | 审核访客投稿 | 后台 → Work / Post，筛选「草稿」 | 见第三节 |
 | 管理/删除注册用户 | 后台 → Settings → User & Permissions Plugin → Users | 见第四节 |
-| 改留言板内容 | 后台 → Message | 只删不改 |
+| 改留言板内容 | 后台 → Message | 只删不改。额度制见第八节 |
+| 管理自己的评论/留言 | 前台「我的」页 → 💬 我的评论面板 | 管自己的；管别人的去后台删。见第八节 |
+| 删除违规文章/作品评论区内容 | 评论无后台界面（存 Comment 集合）| SSH 或让 AI 用脚本删；见第八节 |
 | **改导航栏 Logo 文字** | `site.js` 的 `name` → scp 两文件 → 升版本号 | **见 6.2 实例** |
 | 改博客名/签名/头像/背景 | 本地 `site.js` → scp 上传 → `?v=` 升级 | 见第六节（各字段控制哪里看 6.1） |
 | 手改 index.html 前后 | 过一遍安全清单 | 见 6.3 |
@@ -81,6 +83,39 @@ Nginx（你的服务器 47.97.125.235）
   「喵拉喵丘无法登录」事故就是它被误开导致的——平时不要碰；
 - 目前还没有「忘记密码」邮件找回（未配 SMTP）。用户密码忘了只能请站长在
   Users 编辑页直接设置新密码。
+- 登录后用户可在「我的」页 **🔑 修改密码**（旧密码 + 新密码×2，走 /api/auth/change-password）。
+
+## 四点五、留言板额度制 + 文章/作品评论区
+
+### 留言板（views/board.dynamic.js）—— 额度制
+
+| 身份 | 额度 | 计数依据 |
+|---|---|---|
+| 游客 | 每 IP 仅 **1** 条 | 服务端读 X-Real-Ip（Nginx 覆写的真实地址，伪造头无效） |
+| 注册登录 | 每账号 **3** 条 | 按 uid 计数 |
+
+- 发留言统一走 `POST /api/messages/send`（服务端校验额度）；旧的匿名直发接口已对公众关闭；
+- 登录用户可在「我的 → 💬 我的评论」删除旧留言腾额度；
+- 额度数值改在服务器 `src/api/message/controllers/message.js` 顶部的
+  `GUEST_LIMIT / USER_LIMIT`，改完 `pm2 restart strapi`。
+
+### 文章/作品评论区（views/comments.js）
+
+- 每篇文章、每个作品详情页底部有**独立评论区**，互不串台；
+- 数据存 Strapi 的 **Comment** 集合：targetType(post/work) + targetId 定位归属，
+  uid 绑定发表人；**游客可看不可评**；
+- 接口：`GET /api/comments/list` 公开读；`submit` / `remove` / `mine` 登录专用。
+
+### 我的评论管理（登录用户）
+
+「我的」页底部面板聚合三处发言（文章评论/作品评论/留言板），每条标注所在位置，
+带删除按钮（服务端校验"只能删自己的"）。
+
+### 清理违规内容
+
+- 留言：后台 Content Manager → Message 删除；
+- 评论区内容后台暂无界面（Comment 未接入 Content Manager）：SSH 让 AI 按条件删最快；
+  长期可把 Comment 接入后台（找 AI 改 schema 配置）。
 
 ## 五、把改动更新到线上（scp 上传，必看）
 
