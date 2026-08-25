@@ -58,7 +58,9 @@
           '</div>' +
           '<form id="authForm">' +
             '<input id="fUser" placeholder="用户名或邮箱 *" required style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
-            '<input id="fMail" type="email" placeholder="邮箱 *" required style="display:none;width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
+            /* 注意：邮箱框不能带 required——隐藏必填字段会静默拦截表单提交；
+               切到注册模式时由 JS 动态设置 required */
+            '<input id="fMail" type="email" placeholder="邮箱 *" style="display:none;width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
             '<input id="fPass" type="password" placeholder="密码 *（至少6位）" required minlength="6" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
             '<button type="submit" id="fGo" style="width:100%;padding:11px;border:0;border-radius:8px;' +
               'background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:15px;cursor:pointer">登 录</button>' +
@@ -73,14 +75,17 @@
         n.style.color = ok ? "#2f9e44" : "#d02b20";
       };
 
+      const mailInput = body.querySelector("#fMail");
       body.querySelector("#tabLogin").addEventListener("click", () => {
         mode = "login";
-        body.querySelector("#fMail").style.display = "none";
+        mailInput.style.display = "none";
+        mailInput.required = false;   // 隐藏字段绝不能带 required（会静默拦截提交）
         body.querySelector("#fGo").textContent = "登 录";
       });
       body.querySelector("#tabReg").addEventListener("click", () => {
         mode = "register";
-        body.querySelector("#fMail").style.display = "block";
+        mailInput.style.display = "block";
+        mailInput.required = true;
         body.querySelector("#fGo").textContent = "注 册";
       });
 
