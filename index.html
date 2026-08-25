@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN" class="loading">
 <head>
 <meta charset="UTF-8">
@@ -526,10 +526,11 @@
   window.BLOG_SECTIONS = [];
   window.registerSection = function (def) { BLOG_SECTIONS.push(def); };
 </script>
-<script src="views/board.dynamic.js?v=2"></script>
+<script src="views/board.dynamic.js?v=3"></script>
 <script src="views/about.js?v=3"></script>
 <script src="views/links.js"></script>
-<script src="views/account.js?v=5"></script>
+<script src="views/account.js?v=6"></script>
+<script src="views/comments.js?v=1"></script>
 
 <script>window.DSH_CONTENT_READY = window.DSH_CONTENT_READY || Promise.resolve();</script>
 <script>
@@ -859,7 +860,9 @@ function renderPost(id) {
     '<div class="post-content">' + resolveDetailImgs(a, a.content) + '</div>' +
     '<div class="post-tags">' + a.tags.map(t =>
       '<a href="#/articles/tag/' + encodeURIComponent(t) + '">#' + esc(t) + '</a>').join("") + '</div>' +
-    '</article>';
+    '</article>' +
+    '<div id="cmtBox"></div>';
+  if (window.DSH_COMMENTS) window.DSH_COMMENTS.mount($("cmtBox"), "post", id);
 }
 
 /* ---- 作品 ---- */
@@ -900,7 +903,9 @@ function renderWork(id) {
     '<div class="post-meta">' + meta.join("") + '</div>' +
     dl +
     '<div class="post-content"><p>' + esc(w.desc) + '</p>' + resolveDetailImgs(w, w.detail) + '</div>' +
-    '</article>';
+    '</article>' +
+    '<div id="cmtBox"></div>';
+  if (window.DSH_COMMENTS) window.DSH_COMMENTS.mount($("cmtBox"), "work", id);
 }
 
 /* ---- 扩展分区（views/ 目录注册的模块，如留言板）由路由统一分发 ---- */

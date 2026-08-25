@@ -191,6 +191,11 @@
           /* 我的投稿 */
           '<h3 style="margin:22px 0 10px;padding-left:12px;border-left:3px solid var(--accent);font-size:16px">📋 我的投稿</h3>' +
           '<div id="mineList"><div style="color:var(--muted);font-size:13px;padding:8px 0">加载中…</div></div>' +
+
+          /* 我的评论 */
+          '<h3 style="margin:22px 0 10px;padding-left:12px;border-left:3px solid var(--accent);font-size:16px">💬 我的评论</h3>' +
+          '<p style="font-size:13px;color:var(--muted);margin-bottom:8px">你在文章/作品/留言板的全部发言，可在此删除。</p>' +
+          '<div id="myCmts"><div style="color:var(--muted);font-size:13px;padding:8px 0">加载中…</div></div>' +
         '</article>';
 
       const g = (sel) => body.querySelector(sel);
@@ -328,6 +333,51 @@
         });
       }
       loadMine();
+
+      /* 我的评论（文章/作品评论 + 留言板），可删除 */
+      function loadMyCmts() {
+        const box = g("#myCmts");
+        Promise.all([
+          window.DSH_API.get("/api/comments/mine")["catch"](() => null),
+          window.DSH_API.get("/api/messages/mine")["catch"](() => null),
+        ]).then(([cmts, msgs]) => {
+          const rows = [
+            ...(((cmts && cmts.data) || []).map(c => ({ src: "comment", id: c.id, location: c.location, text: c.content, at: c.createdAt }))),
+            ...(((msgs && msgs.data) || []).map(m => ({ src: "message", id: m.id, location: m.location || "💬 留言板", text: m.content, at: m.createdAt }))),
+          ];
+          if (!rows.length) {
+            box.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">还没有发表过评论或留言</div>';
+            return;
+          }
+          box.innerHTML = rows.map((r) =>
+            '<div class="myCmtRow" data-src="' + r.src + '" data-id="' + r.id + '" ' +
+              'style="padding:10px 4px;border-bottom:1px dashed rgba(128,128,128,.25)">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px">' +
+                '<span style="color:var(--accent)">' + esc(r.location) + '</span>' +
+                '<button class="cmtDel" style="flex:none;font-size:12px;padding:3px 12px;border:1px solid var(--line);' +
+                  'border-radius:999px;background:transparent;color:#d02b20;cursor:pointer">删除</button>' +
+              '</div>' +
+              '<div style="margin-top:4px;line-height:1.7;font-size:14px">' + esc(r.text) + '</div>' +
+              '<div style="margin-top:3px;font-size:12px;color:var(--muted)">' + esc((r.at || "").slice(0, 16).replace("T", " ")) + '</div>' +
+            '</div>').join("");
+        });
+      }
+      loadMyCmts();
+
+      /* 删除按钮事件委托 */
+      g("#myCmts").addEventListener("click", (e) => {
+        const btn = e.target.closest(".cmtDel");
+        if (!btn) return;
+        const row = btn.closest(".myCmtRow");
+        const src = row.dataset.src;
+        const id = Number(row.dataset.id);
+        if (!confirm("确定删除这条" + (src === "comment" ? "评论" : "留言") + "吗？删除后不可恢复。")) return;
+        btn.disabled = true;
+        btn.textContent = "删除中…";
+        window.DSH_API.post(src === "comment" ? "/api/comments/remove" : "/api/messages/remove", { data: { id } })
+          .then(() => loadMyCmts())
+          ["catch"](() => { btn.disabled = false; btn.textContent = "删除"; alert("删除失败，请稍后再试"); });
+      });
     },
   };
 
