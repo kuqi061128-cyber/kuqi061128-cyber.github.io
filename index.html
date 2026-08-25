@@ -529,6 +529,7 @@
 <script src="views/board.dynamic.js?v=2"></script>
 <script src="views/about.js?v=2"></script>
 <script src="views/links.js"></script>
+<script src="views/account.js?v=1"></script>
 
 <script>window.DSH_CONTENT_READY = window.DSH_CONTENT_READY || Promise.resolve();</script>
 <script>
@@ -862,8 +863,13 @@ function renderPost(id) {
 
 /* ---- 作品 ---- */
 function renderWorks() {
+  const loggedIn = window.DSH_AUTH && window.DSH_AUTH.user();
+  const contributeBtn = loggedIn
+    ? '<a href="#/account" style="font-size:13px;text-decoration:none;color:var(--accent);' +
+      'border:1px solid rgba(56,189,248,.35);border-radius:999px;padding:4px 14px">＋ 我要投稿</a>'
+    : '';
   mainView.innerHTML =
-    '<div class="view-head"><h2 class="view-title">🚀 我的作品</h2></div>' +
+    '<div class="view-head"><h2 class="view-title">🚀 我的作品</h2>' + contributeBtn + '</div>' +
     '<div class="works-grid">' + WORKS.map(workCard).join("") + '</div>';
 }
 

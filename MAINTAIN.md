@@ -189,6 +189,24 @@ index.html「分区模块引入区」加：`<script src="views/friends.js"></scr
 管理入口：https://kuqis.cloud/admin → Content Manager → **Message**（只删不改）。
 防灌水：服务器 Nginx 已对写接口限流（/etc/nginx/conf.d/00-ratelimit.conf，按 IP 每分钟 10 次写入，超限返回 429）。
 
+## 八点五、用户系统与投稿审核
+
+访客可在「我的」页注册登录（views/account.js），登录后可投稿作品。
+
+**日常审核流程**：
+1. https://kuqis.cloud/admin → Content Manager → **Work**
+2. 右上筛选器把「发布状态」切成 **草稿** —— 这里全是待审投稿
+3. 看内容没问题 → 打开条目点右上 **Publish** 发布；垃圾内容直接删除
+4. 用户在「我的 → 我的投稿」能看到自己稿子的状态（待审核/已发布）
+
+**安全机制**（都是自动的，别手动改坏）：
+- 用户投稿强制进草稿，无法自行发布（后端 /api/works/submit + 生命周期双保险）
+- 通用创建接口已对登录用户关闭，只剩专用投稿路由
+- 注册/登录/投稿都走 Nginx 写接口限流（每分钟约10次/IP）
+- 权限由服务器 src/index.js 启动钩子自动授予（Authenticated：读全部+投稿+留言点赞；Public：只读+留言点赞）
+
+**已知测试残留**：后台 Users 里可能有 e2etest20260825、visitor802863 两个测试账号，可直接删除。
+
 ## 九、更新到 GitHub（git 三连详解）
 
 **在哪敲命令**：my-site 文件夹里**右键 → Open Git Bash here**（或打开终端后 `cd C:\Users\wishdream\Desktop\DSH\my-site`）。
