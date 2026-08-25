@@ -106,7 +106,24 @@
           window.DSH_AUTH.save(jwt, res.user);
           location.hash = "#/account";
           location.reload();   // 简单可靠：整页刷新让所有插件感知登录态
-        })["catch"]((err) => tip("❌ " + err.message, false));
+        })["catch"]((err) => {
+          const m = err.message || "";
+          let msg;
+          if (m.indexOf("Invalid identifier or password") > -1) {
+            msg = mode === "login"
+              ? "❌ 账号或密码不对（密码至少6位，注意大小写）"
+              : "❌ 注册似乎成功了但自动登录失败，请手动登录一次";
+          } else if (m.indexOf("429") > -1) {
+            msg = "❌ 操作太频繁啦，请等一分钟再试";
+          } else if (m.indexOf("taken") > -1 || m.indexOf("Username") > -1 || m.indexOf("Email") > -1) {
+            msg = "❌ 用户名或邮箱已被注册，换一个试试";
+          } else if (m.indexOf("password") > -1 && mode === "register") {
+            msg = "❌ 密码至少需要 6 位";
+          } else {
+            msg = "❌ " + m;
+          }
+          tip(msg, false);
+        });
       });
     },
 
@@ -224,7 +241,10 @@
           e.target.querySelectorAll("textarea,input[placeholder*='简介'],input[placeholder*='摘要']").forEach(n => n.value = "");
           loadMine();
         })["catch"]((err) => {
-          tip("❌ " + err.message + (err.message.indexOf("403") > -1 ? "（登录可能已过期，请退出重登）" : ""), false);
+          const m = err.message || "";
+          if (m.indexOf("429") > -1) return tip("❌ 操作太频繁啦，请等一分钟再试", false);
+          if (m.indexOf("403") > -1) return tip("❌ 登录可能已过期，请退出后重新登录", false);
+          tip("❌ " + m, false);
         })["finally"](() => { btn.disabled = false; });
       });
 
