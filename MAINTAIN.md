@@ -1,267 +1,170 @@
 # 日常维护手册（改博客看这里）
 
-> 部署相关（首次上线、域名）看 `DEPLOY.md`；各目录详细说明看 `content/README.md`、`plugins/README.md`、`views/README.md`。
+> ⚠️ **先读这条（2026-08 动态化改造后）**：
+> 网站**正式运行在自己的服务器上**（47.97.125.235 · Nginx 托管静态页 + Strapi 提供接口）。
+> **GitHub 仓库只是源码备份**——`git push` 之后线上**不会**自动变化！
+> 把改动更新到线上的唯一方式是 **scp 上传**（见第五节）。
+>
+> 日常发文请走**管理后台**（第二节），本仓库 `content/` 目录现在是**兜底数据源**
+> （仅当 Strapi 挂掉时网站才会显示它），平时不用动。
 
-## 〇、速查表：我想做 X，该动哪里
+## 〇、速查表：我想做 X，该去哪里
 
-| 我想… | 要动的文件 | 还要做什么 |
+| 我想… | 去哪里 | 说明 |
 |---|---|---|
-| 发一篇新文章 | 复制 `content/posts/_template.js` 改名 | index.html 加引入行 → git 三连（RSS 推送后自动更新） |
-| 发一个新作品 | 复制 `content/works/_template.js` 改名 | index.html 加引入行 → git 三连 |
-| 给作品换新安装包（≤100MB） | 作品 js 里的 `file` | 包放 `downloads/` → git 三连 |
-| 给作品换新安装包（>100MB） | 作品 js 里的 `file`/`version`/`size` | **先走 Releases 上传**（见四）→ git 三连 |
-| 加一个推荐网站 | 复制 `content/links/_template.js` | index.html 加引入行 → git 三连 |
-| 删一个推荐网站 | 删 `content/links/` 对应文件 | **index.html 删对应引入行** → git 三连 |
-| 改博客名/签名/头像/背景 | `site.js` | index.html 里 `site.js?v=N` 加一 → git 三连 |
-| 改桌宠台词/素材/插件代码 | `plugins/对应文件` | index.html 里该文件 `?v=N` 加一 → git 三连 |
-| 下线/上线一个插件 | 插件文件里 `enabled` | 直接 git 三连（不用升版本） |
-| 改留言板/评论区 | 基本不用改代码 | 去仓库 Discussions 页面管理评论 |
-| 改完任何东西 | — | **最后一定是 git 三连**（见九），否则线上不变 |
+| 发一篇新文章 | 后台 Content Manager → Post | 发布即上线，无需碰任何文件 |
+| 发一个新作品 | 后台 Content Manager → Work | 同上 |
+| 审核访客投稿 | 后台 → Work / Post，筛选「草稿」 | 见第三节 |
+| 管理/删除注册用户 | 后台 → Settings → User & Permissions Plugin → Users | 见第四节 |
+| 改留言板内容 | 后台 → Message | 只删不改 |
+| 改博客名/签名/头像/背景 | 本地 `site.js` → scp 上传 → `?v=` 升级 | 见第六节 |
+| 改插件/样式/功能代码 | 本地对应文件 → scp 上传 → `?v=` 升级 | 见第五、六节 |
+| 源码备份 | git 三连（GitHub） | 见第九节 |
 
-## 一、改站点信息 → 只动 site.js
-
-博客名、签名、头像、背景图/视频、压暗程度、页脚、站点简介全部在 **site.js** 里，每项都有中文注释。
-
-注意：site.js 自己也有版本号。改完内容要去 index.html 把 `site.js?v=6` 的数字加一（如 → `?v=7`），否则老访客最多延迟 10 分钟才看到。
-
-## 二、发一篇新文章（完整四步）
-
-1. **复制模板**：`content/posts/_template.js` → 重命名为 `日期-英文Slug.js`（如 `2026-09-01-my-post.js`）；
-2. **填内容**：打开新文件，填写 `id`（没用过的数字，发布后永远不要改，文章链接靠它）、标题、日期（YYYY-MM-DD）、分类、标签、摘要、正文；
-3. **挂引入**：index.html 搜 `content/posts/`，在最后一篇下面加一行：
-   `<script src="content/posts/2026-09-01-my-post.js"></script>`
-4. **git 三连**（见第九节）——推送后 GitHub Action 会自动重新生成 rss.xml，不用手动跑
-   `node tools/build-rss.js`（本地想先看 RSS 效果时才需要手动跑一次）。
-
-文章插图：建与 js 文件同名的文件夹（`content/posts/2026-09-01-my-post/`），图片放里面，正文写裸文件名 `<img src="1.png">` 即可。
-
-### 举例：发一篇《九月小结》
-
-新文件 `content/posts/2026-09-10-sept-notes.js` 的内容：
-
-```js
-registerPost({
-  id: 6,                        // 现有用过 1~5，所以用 6
-  title: "九月小结",
-  date: "2026-09-10",
-  category: "随笔",
-  tags: ["随笔"],
-  views: 0,
-  summary: "九月做了什么、想了什么。",
-  content: `
-    <p>第一段正文……</p>
-    <h3>小标题</h3>
-    <p>更多内容……</p>
-  `,
-});
-```
-
-index.html「内容库引入区」最后加：`<script src="content/posts/2026-09-10-sept-notes.js"></script>`
-
-然后终端：`node tools/build-rss.js` → git 三连。刷新首页，「最新文章」第一张就是它。
-
-## 三、发新作品 / 更新作品版本
-
-**新作品**：复制 `content/works/_template.js` 重命名（如 `02-my-app.js`），填内容（封面/详情图放同名文件夹），index.html 加引入行，git 三连。
-
-**更新已有作品**（比如发新版安装包）：只改它自己那个文件——
-- `file`：新包路径（≤100MB 填 `downloads/xxx.zip`；>100MB 填 Releases 链接，见下节）
-- `version`：新版本号（如 `v1.8.0`）
-- `size`：包大小（如 `150 MB`）
-- `detail` 里的「更新日志」加一行新版本的说明
-- index.html 里该作品的 `?v=` 加一
-- git 三连
-
-### 举例：DSH 应用从 v1.7.0 升到 v1.8.0，改哪些地方
-
-打开 `content/works/01-dsh-desktop.js`，一共改四处（改前 → 改后）：
+## 一、网站现在是怎么工作的（30 秒版）
 
 ```
-desc:  "…当前版本 v1.7.0。"            →  "…当前版本 v1.8.0。"
-file:  "…/download/v1.7.0/DSH-v1.7.0.zip"  →  "…/download/v1.8.0/DSH-v1.8.0.zip"
-version: "v1.7.0",                     →  "v1.8.0",
-size:  "144 MB",                       →  "151 MB",
+访客浏览器
+   │  https://kuqis.cloud
+   ▼
+Nginx（你的服务器 47.97.125.235）
+   ├─ 静态文件 ← /var/www/my-site/          （页面骨架/插件/样式）
+   └─ /api/* /admin → 反代 Strapi(:1337)     （文章/作品/留言/用户数据）
+                     └─ MySQL 数据库
+
+内容加载策略（js/api-loader.js）：
+   优先拉 Strapi 接口 → 成功：显示后台内容
+                      → 失败：自动回退本地 content/*.js 兜底，网站永远打得开
 ```
 
-`detail` 的「更新日志」最后加一行：`<p>v1.8.0：新增了 xx 功能。</p>`
+所以：**后台发的内容 = 正式内容**；`content/` 里的旧文章只在后端故障时才会被访客看到。
 
-再到 index.html 把 `01-dsh-desktop.js?v=3` 改成 `?v=4`，git 三连。
+## 二、日常发文（后台操作，约 3 分钟）
 
-## 四、大文件上传（>100MB 必看，走 GitHub Releases）
+1. 浏览器打开 https://kuqis.cloud/admin 登录；
+2. Content Manager → **Post**（文章）或 **Work**（作品）→ 右上 *Create new entry*；
+3. 字段照提示填写：
+   - 文章：title / date(YYYY-MM-DD) / category / tags(JSON 数组如 `["随笔"]`) / summary / contentHtml（正文直接写 HTML）；
+   - 作品：title / desc / tag / version / size / file(下载链接 http 开头) / detail；
+   - 配图：Media Library 先传图，复制 `/uploads/xxx.png` 地址贴进正文 `<img>` 标签；
+4. 右上 **Publish**（发布）→ 打开首页刷新即见。
+5. 发完文章顺手确认 rss.xml 已更新：服务器每天 04:17 自动从数据库重新生成，
+   急着要就 SSH 手动跑一次 `node /opt/my-site/tools/update-rss.mjs`。
 
-git 单文件上限 100MB，安装包超了会被拒收（`downloads/*.zip` 已在 .gitignore 里排除，不会误提交）。以网页操作为例（发 v1.8.0 时照抄，把版本号换掉即可）：
+> 💡 后台创建的内容**立即发布**不受投稿审核影响；只有用户从前台投稿的才进草稿队列。
 
-1. 打开仓库页面 → **Releases** → **Draft a new release**；
-2. **Choose a tag**：输入新 tag（如 `v1.8.0`）→ 点 "Create new tag"；
-3. 标题写版本号，正文写更新日志；
-4. 把 zip 包**拖进附件区**，等上传完成（大文件要几分钟）；
-5. **Publish release** 发布；
-6. 进入刚发布的 release 页面，**右键附件文件名 → 复制链接**（形如 `https://github.com/用户名/仓库名/releases/download/v1.8.0/xxx.zip`）；
-7. 把链接填进作品 js 的 `file` 字段，按第三节更新 `version`/`size`/更新日志，git 三连。
+## 三、审核访客投稿（作品 + 文章）
 
-## 五、管理推荐网站（"网站推荐"页）
+用户在「我的」页投稿后会进入**草稿**队列等你把关：
 
-一个站一个文件，在 `content/links/` 目录：
+1. 后台 → Content Manager → **Work**（作品）或 **Post**（文章）；
+2. 右上筛选器把「发布状态」切成 **草稿** —— 待审投稿全在这；
+3. 内容 OK → 打开条目点右上 **Publish** 发布；垃圾内容直接删除；
+4. 投稿人在「我的 → 我的投稿」能看到自己稿子的状态（待审核/已发布）；
+5. 用户投稿的作品/文章详情页会自动显示「👤 投稿账号名」（authorName 字段）；
+   你自己后台发的不带作者行。
 
-- **加站**：复制 `_template.js` 重命名（如 `07-example.js`），填 `name / url / desc / tag / color`（配色别和现有重复），index.html「内容库引入区」加对应引入行；
-- **删站**：删文件 + **必须同时删 index.html 里对应那行 `<script>`**（否则控制台报 404）；
-- **改站**：直接改它自己的文件，并在 index.html 里给它加/升 `?v=`。
+**安全机制**（自动的，别手动破坏）：
+- 投稿接口强制 `status:'draft'`，登录用户无法自行发布；
+- 通用创建接口对登录用户关闭（路由只留只读 + submit/mine 专用路由）；
+- 注册/登录/投稿都过 Nginx 写限流（每分钟约 10 次/IP，超限 429）；
+- 权限由服务器 `src/index.js` 启动钩子自动授予/回收，改权限改那个文件。
 
-### 举例：添加「硅基流动」（真实发生过）
+## 四、用户管理（注册账号在哪、封禁开关在哪）
 
-新文件 `content/links/05-siliconflow.js`：
+- 入口：后台 → 左下角 **Settings ⚙️ → User & Permissions Plugin → Users**。
+  **Content Manager 里看不到用户，别在那找。**
+- 删除测试/垃圾账号：列表勾选删除即可；
+- ⚠️ 用户编辑页的 **Blocked** 开关 = 封禁，打开后对方无法登录。
+  「喵拉喵丘无法登录」事故就是它被误开导致的——平时不要碰；
+- 目前还没有「忘记密码」邮件找回（未配 SMTP）。用户密码忘了只能请站长在
+  Users 编辑页直接设置新密码。
 
-```js
-registerSite({
-  name: "硅基流动",
-  url: "https://siliconflow.cn",
-  desc: "国内直连的大模型 API 云服务，DeepSeek 等开箱即用。",
-  tag: "AI",
-  color: "#7c3aed",
-});
+## 五、把改动更新到线上（scp 上传，必看）
+
+本地 `my-site/` 改完代码后，按需上传到服务器同路径：
+
+```powershell
+# 单文件示例：上传改过的插件并升级版本号
+scp my-site/plugins/pet.js root@47.97.125.235:/var/www/my-site/plugins/pet.js
+scp my-site/index.html root@47.97.125.235:/var/www/my-site/index.html
 ```
 
-index.html 引入区加：`<script src="content/links/05-siliconflow.js"></script>` → git 三连。
+常用目标路径对照：
 
-### 举例：删掉「哔哩哔哩」
+| 本地 | 服务器 |
+|---|---|
+| index.html / site.js | /var/www/my-site/ |
+| js/*.js、plugins/*.js | /var/www/my-site/js/ 、 /plugins/ |
+| views/*.js | /var/www/my-site/views/ |
+| content/**（兜底内容） | /var/www/my-site/content/ |
 
-① 删除文件 `content/links/03-bilibili.js`；
-② index.html 里删掉 `<script src="content/links/03-bilibili.js"></script>` 这一行（**这步最容易忘**）；
-③ git 三连。
+上传完记得做两件事：
+1. **index.html 里对应文件的 `?v=N` 数字加一**（静态资源现在有 30 天浏览器长缓存，
+   不升版本号老访客 30 天内都看不到新文件！见第七节）；
+2. 上传新的 index.html（它本身不缓存，即时生效）。
 
-## 六、管理插件（左右栏小工具）
+改完最后 git 三连做源码备份（第九节）——push 不影响线上，纯粹防丢。
 
-插件一文件一插件，在 `plugins/` 目录：
+## 六、改站点信息 / 插件 / 分区（代码层）
 
-- **新增**：复制 `plugins/_template.js` 写好 → index.html「插件库引入区」加一行（新文件不用 `?v=`）；
-- **下线/上线**：改 `enabled: false / true`；
-- **排序**：改 `order`（小靠前）；**换栏**：改 `column`（`left` / `right` / `float` 浮动）；
-- **改代码**（如桌宠台词在 `plugins/pet.js` 顶部的 `TALK` 表）：改完在 index.html 升该文件 `?v=`。
+- **站点信息**：`site.js`（名字/签名/头像/背景/页脚/giscus 已废弃不用）→ 上传 + `site.js?v=` 升级；
+- **插件**：`plugins/` 一文件一插件。下线改 `enabled:false`；台词等改完升 `?v=`
+  （如 `pet.js?v=15 → v16`）；点赞/统计/留言板已是云端版（`*.dynamic.js`）；
+- **分区**：`views/` 一文件一分区（account=我的 / board.dynamic=留言墙 / about / links）；
+- **兜底文章**：想新增"后端挂了也能看"的文章，复制 `content/posts/_template.js`
+  并在 index.html「内容库引入区」加引入行，**同时**把它追加进 `js/api-loader.js`
+  的 LOCAL_FILES 清单（两处都要，否则回退时不加载）。
 
-### 举例：改桌宠台词（最常用）
+## 七、缓存与版本号 ?v= 规则（重要性↑↑）
 
-`plugins/pet.js` 顶部找到 `TALK` 表，照格式加一行（数字是权重，越大越常出现）：
+动态化后 Nginx 对静态资源启用了 **30 天长缓存**（js/css/图片/音视频）：
 
-```js
-const TALK = [
-  ["摸摸我，给博客点个赞喵！", 3],
-  ["今天也要元气满满喵～", 2],
-  ["新台词放这里喵！", 2],      // ← 新加的
-  ...
-];
+- **index.html、rss.xml、sitemap.xml、接口**：不缓存，永远最新；
+- **其他静态文件**：缓存 30 天 ⇒ **改已存在的文件必须升它的 `?v=`，否则老访客看不到**；
+- 新增文件不需要 `?v=`。
+
+口诀不变：「改旧文件 → 升版本号」，但现在忘了升的后果是 **30 天**不可见（以前只有几分钟）。
+
+## 八、大文件上传（>100MB 走 GitHub Releases）
+
+安装包超过 GitHub 单文件上限，放 Releases 托管：
+1. 仓库页 → Releases → Draft a new release → 建 tag（如 `v1.8.0`）→ 拖入 zip → Publish；
+2. 复制附件直链（形如 `https://github.com/.../releases/download/v1.8.0/xxx.zip`）；
+3. 填进后台 Work 的 file 字段（或本地兜底作品的 file 字段）。
+
+## 九、源码备份：git 三连 + 应急推送
+
+```bash
+git add -A
+git commit -m "一句话说明"
+git push
 ```
 
-然后 index.html 里 `pet.js?v=15` → `?v=16` → git 三连。
+- push 成功 ≠ 线上更新（线上靠 scp，见第五节）；这一步只为源码不丢；
+- **github.com 直连被污染时**（报 Could not connect / Connection reset）走应急通道：
+  ```powershell
+  $env:GH_TOKEN="ghp_你的令牌"; python tools/api-push.py
+  ```
+  - 走 api.github.com 的 API 合成提交（Python 通道通常可达）；
+  - 多个未推送提交会一次推完；含图片等二进制也没问题；
+  - 若曾用 DIFF_BASE 场景推过（历史分叉），网络恢复后执行
+    `git pull --rebase && git push` 归位；
+  - 令牌在 github.com/settings/tokens 生成（勾 repo 权限），**用完撤销**。
 
-### 举例：下线「标签云」
-
-`plugins/tag-cloud.js` 里把 `enabled: true` 改成 `enabled: false` → git 三连（想恢复改回 true 即可）。
-
-## 七、加一个导航分区（如"相册"）
-
-复制 `views/_template.js` 重命名（如 `gallery.js`），改 `id` / `label` / `render`，index.html「分区模块引入区」加一行，导航自动出现新标签（地址 `#/gallery`）。
-
-### 举例：加一个「朋友们」分区
-
-新文件 `views/friends.js`（最简可用版）：
-
-```js
-(function () {
-  const S = {
-    id: "friends",      // 路由地址 #/friends
-    label: "朋友们",     // 导航按钮文字
-    order: 50,
-    render(el) {
-      el.innerHTML =
-        '<div class="view-head"><h2 class="view-title">👫 朋友们</h2></div>' +
-        '<div class="post-card"><h4>这里放朋友的主页链接</h4></div>';
-    },
-  };
-  registerSection(S);
-})();
-```
-
-index.html「分区模块引入区」加：`<script src="views/friends.js"></script>` → 刷新后导航多出「朋友们」。
-
-## 八、留言板维护
-
-留言板是**云端匿名留言墙**（views/board.dynamic.js）：访客填昵称直接留言，数据存 Strapi 的 Message 集合。
-管理入口：https://kuqis.cloud/admin → Content Manager → **Message**（只删不改）。
-防灌水：服务器 Nginx 已对写接口限流（/etc/nginx/conf.d/00-ratelimit.conf，按 IP 每分钟 10 次写入，超限返回 429）。
-
-## 八点五、用户系统与投稿审核
-
-访客可在「我的」页注册登录（views/account.js），登录后可**投稿作品和文章**（表单里切换类型）。
-
-**日常审核流程**：
-1. https://kuqis.cloud/admin → Content Manager
-2. 审作品：**Work** / 审文章：**Post**
-3. 右上筛选器把「发布状态」切成 **草稿** —— 这里全是待审投稿
-4. 看内容没问题 → 打开条目点右上 **Publish** 发布；垃圾内容直接删除
-5. 用户在「我的 → 我的投稿」能看到自己稿子的状态（待审核/已发布）
-
-**发布人显示**：用户投稿的作品/文章详情页会自动显示「👤 投稿账号名」（authorName 字段）；站长后台自己发的不带作者行。
-
-**安全机制**（都是自动的，别手动改坏）：
-- 用户投稿强制进草稿，无法自行发布（/works/submit 与 /posts/submit 均显式 status:'draft'）
-- 通用创建接口已对登录用户关闭，只剩专用投稿路由
-- 注册/登录/投稿都走 Nginx 写接口限流（每分钟约10次/IP）
-- 权限由服务器 src/index.js 启动钩子自动授予（Authenticated：读全部+两类投稿+留言点赞）
-
-**已知测试残留**：后台 Users 里可能有 e2etest20260825、authtest2026、visitor802863 等测试账号，可直接删除。
-**注意**：Post/Work 开启了草稿机制，每篇已发布内容在数据库有一条对应草稿行（正常现象，勿删）。
-
-## 九、更新到 GitHub（git 三连详解）
-
-**在哪敲命令**：my-site 文件夹里**右键 → Open Git Bash here**（或打开终端后 `cd C:\Users\wishdream\Desktop\DSH\my-site`）。
-
-```
-git add -A                    # 第1步：收集所有改动（新增/修改/删除的文件全算上）
-git commit -m "一句话说明"     # 第2步：打包成一次提交，说明写改了什么（中文随意）
-git push                      # 第3步：推送到 GitHub，1~2 分钟后线上自动更新
-```
-
-**怎么确认成功**：
-- push 后最后一行输出类似 `main -> main` 即成功；
-- 打开仓库网页（github.com/kuqi061128-cyber/kuqi061128-cyber.github.io），首页最新 commit 是你刚才那句说明；
-- 等 1~2 分钟刷新 kuqis.cloud 看效果。
-
-### 举例：一次完整的操作过程（终端里长这样）
-
-```
-$ git add -A
-$ git commit -m "新文章：九月小结"
-[main 9abc123] 新文章：九月小结
- 3 files changed, 25 insertions(+)
-$ git push
-Enumerating objects: ...
-To https://github.com/kuqi061128-cyber/kuqi061128-cyber.github.io.git
-   08a23f5..9abc123  main -> main        ← 看到这行 = 成功
-```
-
-**常见情况**：
-- 第一次自己 push 会弹 GitHub 登录窗口，浏览器授权一次后 Windows 记住，以后不再问；
-- push 报错带 `rejected` / `fetch first`：说明云端有你本地没有的提交（在别的电脑改过之类），先 `git pull --rebase` 再 `git push`；
-- 改完忘了 git 三连 → 线上永远不变，这是"没生效"的最常见原因。
-
-## 十、缓存版本号 ?v= 规则（"看不到变化"的解法）
-
-**口诀：改了「已存在的文件」内容 → index.html 里对应 `<script>` 的 `?v=` 数字加一；新增文件 → 不用。**
-
-- **例 A**：改了 `plugins/pet.js`（换台词）→ index.html 搜 `pet.js` → `?v=15` 改 `?v=16` → git 三连；
-- **例 B**：改了 `site.js`（换签名）→ index.html 里 `site.js?v=6` 改 `?v=7` → git 三连；
-- **例 C**：发了新文章 → 新文件不用 `?v=`，但记得 `node tools/build-rss.js` 更新 RSS。
-
-## 十一、常见问题
+## 十、常见问题
 
 | 现象 | 处理 |
 |---|---|
-| 改了代码线上没变化 | ① git 三连做了吗 ② 等 2 分钟 ③ `?v=` 升了吗 |
+| 点「登录」毫无反应 | 手机/浏览器还在跑旧脚本：强制刷新（Ctrl+F5 / 清站点缓存）。历史原因是隐藏必填框拦截校验，v5 已修复 |
+| 登录报「账号被管理员封禁」 | 后台 Users 里找到该账号，编辑页把 **Blocked** 关掉 |
+| 登录报「操作太频繁」 | 触发了写接口限流，等一分钟再试 |
+| 访客说投稿不见了 | 大概率还在草稿待审（正常），后台筛「草稿」处理 |
+| 改了代码线上没变化 | ① scp 了吗（push 不算！）② `?v=` 升了吗 ③ 强刷 |
+| 首页能开但文章/作品是旧的几篇 | Strapi 挂了，网站正在用本地兜底内容。SSH 看 `pm2 status`，重启 strapi |
+| 接口报 429 | 限流触发，一分钟自动恢复；频繁误伤可调 conf.d/00-ratelimit.conf 的 rate |
 | push 被拒 / rejected | `git pull --rebase` 后再 push |
-| push 报 `Could not connect to github.com` | github.com 被网络污染（api 通道通常还通）。应急：`python tools/api-push.py ghp_你的令牌` 走 API 通道推；恢复后跑一次 `git pull --rebase && git push` 归位 |
-| push/pull 报 `401 Bad credentials` | 令牌过期或被撤销：GitHub → Settings → Developer settings → Personal access tokens 重新生成一个，用新令牌操作 |
-| 文章打不开/内容串了 | `id` 重复，或改了已发布的 `id` |
-| 图片裂图 | 检查文件名大小写、图片是否在与 js 同名的文件夹里 |
-| 上传超 100MB 失败 | 走 Releases（见第四节） |
-| 想先看本地效果 | my-site 目录执行 `python -m http.server 8642` → 浏览器开 `http://localhost:8642` |
-| RSS 没更新 | 正常会由 GitHub Action 自动更新；去仓库 Actions 页看是否跑失败，或本地补跑 `node tools/build-rss.js` 再 git 三连 |
+| push 连不上 github.com | 应急推送见第九节 |
+| 图片裂图 | 检查大小写、图片是否在与 js 同名文件夹 |
+| RSS 没更新 | 服务器每日 04:17 自动生成；手动：`node /opt/my-site/tools/update-rss.mjs` |
+| 想先看本地效果 | my-site 目录用静态服务器打开即可（接口失败自动走兜底数据） |

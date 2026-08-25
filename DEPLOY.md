@@ -1,5 +1,13 @@
 # 部署上线手册（GitHub Pages + 自定义域名）
 
+> ⚠️ **2026-08 状态更新：本文档描述的 GitHub Pages 托管方式已不再是当前线上架构。**
+> 现在 https://kuqis.cloud 由**自有服务器**（Nginx + Strapi）直接服务：
+> - 更新线上 = `scp` 文件到 `/var/www/my-site/`（详见《动态网站构建与日后人工维护指南》第四节、my-site/MAINTAIN.md 第五节）
+> - 本仓库 git push 到 GitHub **仅作源码备份**，不会更新线上
+> - 大文件仍走 GitHub Releases（第四节流程继续有效）
+>
+> 本文其余内容保留作为历史参考与应急备用方案。
+
 > 前置条件：域名（审核中）、GitHub 账号。全部完成后，别人就能通过你的域名访问博客。
 
 ## 第一步：把代码推上 GitHub
