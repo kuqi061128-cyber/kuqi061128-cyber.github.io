@@ -122,11 +122,15 @@ scp my-site/index.html root@47.97.125.235:/var/www/my-site/index.html
 
 | site.js 字段 | 显示位置 |
 |---|---|
-| `name` | ①导航栏 Logo（**只显示这个名字，无任何后缀**）②浏览器标签页标题 ③分享卡片标题 |
+| `name` | ①导航栏 Logo（**只显示这个名字，无任何后缀**）②浏览器标签页标题 ③分享卡片标题 —— **这是"站名"，别填人名** |
+| `ownerName` | **作者/站长称呼**：首页「你好，我是 …」、关于页大名字、头像占位符。留空自动回退站名。**个人向位置都读它** |
 | `tagline` | 仅首页横幅「你好，我是…」下方的一行小字（导航栏已不显示它） |
 | `intro` | 首页横幅简介段落 |
 | `footer` | 页脚一行字 |
 | `description` | 搜索引擎/分享卡片的描述文字 |
+
+> 为什么拆成两个字段：站名和作者名是两回事——站名叫「Kuqi's Web」，但自我介绍里应该自称「Kuqi」。
+> 个人向位置（问候语/关于页）读 `ownerName`；品牌向位置（Logo/标题）读 `name`。
 
 > 导航栏 Logo 的渲染代码在 index.html 里，就一行：
 > `document.getElementById("logo").textContent = SITE.name;`
