@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN" class="loading">
 <head>
 <meta charset="UTF-8">
@@ -477,7 +477,7 @@
 <div class="toast" id="toast"></div>
 
 <!-- ================= 站点信息：博客名 / 头像 / 介绍 / 背景图 / 页脚，改 site.js 即可 ================= -->
-<script src="site.js?v=11"></script>
+<script src="site.js?v=12"></script>
 
 <!-- ================= 插件库：一个插件一个文件，升级/更换/下线只动 plugins/ 目录 ================= -->
 <script>
@@ -527,7 +527,7 @@
   window.registerSection = function (def) { BLOG_SECTIONS.push(def); };
 </script>
 <script src="views/board.dynamic.js?v=2"></script>
-<script src="views/about.js?v=2"></script>
+<script src="views/about.js?v=3"></script>
 <script src="views/links.js"></script>
 <script src="views/account.js?v=5"></script>
 
@@ -790,13 +790,14 @@ function postCard(a) {
 /* ---- 首页 ---- */
 function renderHome() {
   const latest = ARTICLES.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
+  const owner = SITE.ownerName || SITE.name;   // 个人向位置用作者称呼，未配置则回退站名
   const avatarHtml = SITE.avatar
     ? '<img src="' + esc(SITE.avatar) + '" alt="头像">'
-    : esc((SITE.name || "博")[0]);
+    : esc((owner || "博")[0]);
   mainView.innerHTML =
     '<div class="banner">' +
       '<div class="avatar">' + avatarHtml + '</div>' +
-      '<div><h2>你好，我是 ' + esc(SITE.name) + '</h2>' +
+      '<div><h2>你好，我是 ' + esc(owner) + '</h2>' +
       '<p>' + esc(SITE.tagline) + '</p>' +
       (SITE.intro ? '<p class="site-intro">' + esc(SITE.intro) + '</p>' : '') +
       '<div class="chips"><span class="chip">文章 ' + ARTICLES.length + '</span>' +

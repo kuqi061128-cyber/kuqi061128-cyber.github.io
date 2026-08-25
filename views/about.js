@@ -11,14 +11,15 @@
 
     render(el, ctx) {
       const s = ctx.SITE;
+      const owner = s.ownerName || s.name;   // 个人向位置用作者称呼，未配置则回退站名
       el.innerHTML =
         '<div class="view-head"><h2 class="view-title">👋 关于</h2></div>' +
         '<article class="post-detail">' +
           '<div class="banner" style="margin-bottom:20px">' +
             '<div class="avatar">' + (s.avatar
               ? '<img src="' + ctx.esc(s.avatar) + '" alt="头像">'
-              : ctx.esc((s.name || "博")[0])) + "</div>" +
-            '<div><h2>' + ctx.esc(s.name) + "</h2>" +
+              : ctx.esc((owner || "博")[0])) + "</div>" +
+            '<div><h2>' + ctx.esc(owner) + "</h2>" +
             '<p>' + ctx.esc(s.tagline) + "</p></div>" +
           "</div>" +
           '<div class="post-content">' +
