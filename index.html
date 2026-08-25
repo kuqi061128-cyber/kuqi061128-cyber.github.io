@@ -477,7 +477,7 @@
 <div class="toast" id="toast"></div>
 
 <!-- ================= 站点信息：博客名 / 头像 / 介绍 / 背景图 / 页脚，改 site.js 即可 ================= -->
-<script src="site.js?v=10"></script>
+<script src="site.js?v=11"></script>
 
 <!-- ================= 插件库：一个插件一个文件，升级/更换/下线只动 plugins/ 目录 ================= -->
 <script>
@@ -607,15 +607,14 @@ function articleViews(id) {
 }
 
 /* ================= 顶部 Logo ================= */
-document.getElementById("logo").innerHTML =
-  SITE.name + "<span>.blog</span> · " + SITE.tagline;
-document.title = SITE.name + " 博客";
+document.getElementById("logo").textContent = SITE.name;
+document.title = SITE.name;
 /* SEO meta 与 site.js 配置同步（<head> 里的静态值供不执行 JS 的爬虫，这里是给浏览器/执行 JS 的爬虫） */
 (function () {
   const set = (sel, val) => { const m = document.querySelector(sel); if (m && val) m.setAttribute("content", val); };
   set('meta[name="description"]', SITE.description);
-  set('meta[property="og:title"]', SITE.name + " 博客 · " + SITE.tagline);
-  set('meta[property="og:site_name"]', SITE.name + " 博客");
+  set('meta[property="og:title"]', SITE.name);
+  set('meta[property="og:site_name"]', SITE.name);
   set('meta[property="og:description"]', SITE.description);
   set('meta[property="og:url"]', SITE.url);
   const canon = document.querySelector('link[rel="canonical"]');
@@ -913,7 +912,7 @@ function setActiveTab(view) {
 
 /* 每个路由独立页面标题（浏览器标签页 / 收藏 / 历史记录里能看到具体页名） */
 function setPageTitle(sub) {
-  document.title = sub ? sub + " - " + SITE.name + " 博客" : SITE.name + " 博客";
+  document.title = sub ? sub + " - " + SITE.name : SITE.name;
 }
 
 function route() {
