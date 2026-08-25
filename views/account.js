@@ -139,6 +139,19 @@
               'background:transparent;color:var(--muted);cursor:pointer">退出登录</button>' +
           '</div>' +
 
+          /* 修改密码（折叠面板） */
+          '<details style="margin-top:16px">' +
+            '<summary style="cursor:pointer;font-size:14px;color:var(--accent);user-select:none">🔑 修改密码</summary>' +
+            '<form id="pwForm" style="margin-top:12px">' +
+              '<input id="pCur" type="password" placeholder="当前密码 *" required autocomplete="current-password" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
+              '<input id="pNew" type="password" placeholder="新密码 *（至少6位）" required minlength="6" autocomplete="new-password" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
+              '<input id="pNew2" type="password" placeholder="确认新密码 *" required minlength="6" autocomplete="new-password" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
+              '<button type="submit" id="pGo" style="width:100%;padding:9px;border:1px solid rgba(56,189,248,.35);border-radius:8px;' +
+                'background:transparent;color:var(--accent);font-size:14px;cursor:pointer">更 新 密 码</button>' +
+              '<div id="pTip" style="margin-top:8px;font-size:13px;text-align:center;min-height:18px;color:var(--muted)"></div>' +
+            '</form>' +
+          '</details>' +
+
           /* 投稿类型切换 + 表单 */
           '<h3 style="margin:22px 0 10px;padding-left:12px;border-left:3px solid var(--accent);font-size:16px">✍️ 我要投稿</h3>' +
           '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">提交后进入待审核，站长确认后会在对应栏目展示。</p>' +
@@ -181,6 +194,44 @@
       g("#btnOut").addEventListener("click", () => {
         window.DSH_AUTH.logout();
         location.reload();
+      });
+
+      /* 修改密码 */
+      const tipP = (t, ok) => {
+        const n = g("#pTip");
+        n.textContent = t;
+        n.style.color = ok ? "#2f9e44" : "#d02b20";
+      };
+      g("#pwForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const cur = g("#pCur").value;
+        const n1 = g("#pNew").value;
+        const n2 = g("#pNew2").value;
+        if (n1.length < 6) return tipP("❌ 新密码至少 6 位", false);
+        if (n1 !== n2) return tipP("❌ 两次输入的新密码不一致", false);
+        if (n1 === cur) return tipP("❌ 新密码不能和当前密码相同", false);
+
+        const btn = g("#pGo");
+        btn.disabled = true;
+        tipP("更新中…", true);
+        window.DSH_API.post("/api/auth/change-password", {
+          currentPassword: cur,
+          password: n1,
+          passwordConfirmation: n2,
+        })
+          .then((res) => {
+            // 接口返回新令牌，顺手续期本地登录态
+            if (res.jwt || res.token) window.DSH_AUTH.save(res.jwt || res.token, res.user || me);
+            tipP("✅ 密码已更新，下次登录请使用新密码", true);
+            e.target.reset();
+          })
+          ["catch"]((err) => {
+            const m = err.message || "";
+            if (m.indexOf("currentPassword") > -1 || m.indexOf("Invalid") > -1) tipP("❌ 当前密码不对", false);
+            else if (m.indexOf("429") > -1) tipP("❌ 操作太频繁啦，请等一分钟再试", false);
+            else tipP("❌ " + m, false);
+          })
+          ["finally"](() => { btn.disabled = false; });
       });
 
       /* 投稿类型切换 */
