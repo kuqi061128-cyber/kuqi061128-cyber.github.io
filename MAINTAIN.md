@@ -183,9 +183,11 @@ const TALK = [
 
 index.html「分区模块引入区」加：`<script src="views/friends.js"></script>` → 刷新后导航多出「朋友们」。
 
-## 八、留言板（giscus）维护
+## 八、留言板维护
 
-评论存在仓库的 **Discussions** 标签：仓库页面 → Discussions → 对应帖子，可置顶/回复/删除。giscus 配置在 site.js 的 `giscus` 段（一般不用动）。
+留言板是**云端匿名留言墙**（views/board.dynamic.js）：访客填昵称直接留言，数据存 Strapi 的 Message 集合。
+管理入口：https://kuqis.cloud/admin → Content Manager → **Message**（只删不改）。
+防灌水：服务器 Nginx 已对写接口限流（/etc/nginx/conf.d/00-ratelimit.conf，按 IP 每分钟 10 次写入，超限返回 429）。
 
 ## 九、更新到 GitHub（git 三连详解）
 

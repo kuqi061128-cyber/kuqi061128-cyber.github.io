@@ -16,9 +16,8 @@
 <meta property="og:image" content="https://kuqis.cloud/assets/background.jpg">
 <meta name="twitter:card" content="summary">
 <link rel="alternate" type="application/rss+xml" title="Kuqi 博客 RSS" href="rss.xml">
-<!-- 第三方服务预连接：统计/评论脚本握手提前完成，不阻塞也不抢首屏 -->
+<!-- 第三方服务预连接：统计脚本握手提前完成，不阻塞也不抢首屏 -->
 <link rel="preconnect" href="https://busuanzi.ibruce.info" crossorigin>
-<link rel="preconnect" href="https://giscus.app">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -347,7 +346,7 @@
   .work-dl:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(56,189,248,.4); }
   .dl-size { opacity: .85; font-size: 11px; }
 
-  /* ---- 留言板（giscus 评论区，样式由 giscus 主题接管） ---- */
+  /* ---- 留言板（云端留言墙，数据存 Strapi Message 集合） ---- */
 
   /* ================= 右栏：统计类插件 ================= */
   .stat-row {
@@ -478,7 +477,7 @@
 <div class="toast" id="toast"></div>
 
 <!-- ================= 站点信息：博客名 / 头像 / 介绍 / 背景图 / 页脚，改 site.js 即可 ================= -->
-<script src="site.js?v=8"></script>
+<script src="site.js?v=9"></script>
 
 <!-- ================= 插件库：一个插件一个文件，升级/更换/下线只动 plugins/ 目录 ================= -->
 <script>
@@ -487,9 +486,9 @@
 </script>
 <script src="plugins/clock.js"></script>
 <script src="plugins/quote.js"></script>
-<script src="plugins/like.js?v=1"></script>
+<script src="plugins/like.dynamic.js?v=4"></script>
 <script src="plugins/pet.js?v=15"></script>
-<script src="plugins/site-stats.js?v=3"></script>
+<script src="plugins/site-stats.dynamic.js?v=1"></script>
 <script src="plugins/hot-posts.js"></script>
 <script src="plugins/categories.js"></script>
 <script src="plugins/tag-cloud.js"></script>
@@ -517,28 +516,23 @@
   window.BLOG_SITES = [];
   window.registerSite = function (def) { BLOG_SITES.push(def); };
 </script>
-<script src="content/links/01-deepseek.js"></script>
-<script src="content/links/02-github.js"></script>
-<script src="content/links/03-bilibili.js"></script>
-<script src="content/links/04-kk.js"></script>
-<script src="content/links/05-siliconflow.js"></script>
-<script src="content/links/06-modelscope.js"></script>
-<script src="content/posts/2026-08-20-welcome.js"></script>
-<script src="content/posts/2026-08-12-zero-dep-blog.js"></script>
-<script src="content/posts/2026-08-05-august-notes.js"></script>
-<script src="content/posts/2026-08-22-publish-guide.js"></script>
-<script src="content/works/01-dsh-desktop.js?v=3"></script>
+<!-- ================= 动态内容：优先 Strapi 后台接口，失败自动回退本地 JS 内容 ================= -->
+<script src="js/api.js"></script>
+<script src="js/api-loader.js?v=1"></script>
+<!-- 本地 content/*.js 保留作兜底数据源（清单见 js/api-loader.js 的 LOCAL_FILES），请勿删除 -->
 
 <!-- ================= 分区模块：扩展分区（如留言板）在 views/ 目录，导航自动生成 ================= -->
 <script>
   window.BLOG_SECTIONS = [];
   window.registerSection = function (def) { BLOG_SECTIONS.push(def); };
 </script>
-<script src="views/board.js?v=4"></script>
-<script src="views/about.js?v=1"></script>
+<script src="views/board.dynamic.js?v=2"></script>
+<script src="views/about.js?v=2"></script>
 <script src="views/links.js"></script>
 
+<script>window.DSH_CONTENT_READY = window.DSH_CONTENT_READY || Promise.resolve();</script>
 <script>
+window.DSH_CONTENT_READY.then(function () {
 /* ================= 开场加载屏：小人随进度奔跑，真实加载完成即淡出 ================= */
 (function () {
   var loader = document.getElementById("loader");
@@ -976,11 +970,6 @@ function applyTheme(t) {
     btn.textContent = t === "light" ? "🌙" : "☀️";
     btn.title = t === "light" ? "切换到暗色主题" : "切换到亮色主题";
   }
-  /* 留言板 giscus iframe 跟随主题（transparent_dark 透明底适合本站暗色） */
-  const gf = document.querySelector("iframe.giscus-beta");
-  if (gf) gf.contentWindow.postMessage(
-    { giscus: { setConfig: { theme: t === "light" ? "noborder_light" : "transparent_dark" } } },
-    "https://giscus.app");
 }
 let theme = storeGet("dsh_theme", "dark");
 applyTheme(theme);
@@ -994,6 +983,7 @@ $("themeBtn").addEventListener("click", function () {
 mountPlugins();
 renderNavTabs();
 route();
+});
 </script>
 
 </body>

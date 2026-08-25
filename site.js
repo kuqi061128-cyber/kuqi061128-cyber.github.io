@@ -23,15 +23,5 @@ window.BLOG_SITE = {
   cardBlur: 0,                              // 卡片磨砂模糊像素：0 = 完全不启用（性能最好，推荐）；调大（如 8、16）变磨砂玻璃感（会略增渲染负担）
 
   /* 页脚 */
-  footer: "© 2026 Kuqi 的博客 · 由 GitHub Pages 免费托管",  // 页脚文字
-
-  /* 留言板评论（giscus · GitHub Discussions）
-     访客用 GitHub 账号登录留言，评论存进仓库 Discussions，站长在仓库 Discussions 标签管理
-     前提：仓库已开启 Discussions 并安装 giscus 应用（https://github.com/apps/giscus） */
-  giscus: {
-    repo: "kuqi061128-cyber/kuqi061128-cyber.github.io",
-    repoId: "R_kgDOUBJ86Q",
-    category: "Announcements",              // 只允许维护者发起的讨论分类，防止访客乱开帖
-    categoryId: "DIC_kwDOUBJ86c4DEALw",
-  },
+  footer: "© 2026 Kuqi 的博客 · 零依赖前端 + Strapi 动态内容",
 };
