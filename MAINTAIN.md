@@ -17,7 +17,9 @@
 | 审核访客投稿 | 后台 → Work / Post，筛选「草稿」 | 见第三节 |
 | 管理/删除注册用户 | 后台 → Settings → User & Permissions Plugin → Users | 见第四节 |
 | 改留言板内容 | 后台 → Message | 只删不改 |
-| 改博客名/签名/头像/背景 | 本地 `site.js` → scp 上传 → `?v=` 升级 | 见第六节 |
+| **改导航栏 Logo 文字** | `site.js` 的 `name` → scp 两文件 → 升版本号 | **见 6.2 实例** |
+| 改博客名/签名/头像/背景 | 本地 `site.js` → scp 上传 → `?v=` 升级 | 见第六节（各字段控制哪里看 6.1） |
+| 手改 index.html 前后 | 过一遍安全清单 | 见 6.3 |
 | 改插件/样式/功能代码 | 本地对应文件 → scp 上传 → `?v=` 升级 | 见第五、六节 |
 | 源码备份 | git 三连（GitHub） | 见第九节 |
 
@@ -108,13 +110,68 @@ scp my-site/index.html root@47.97.125.235:/var/www/my-site/index.html
 
 ## 六、改站点信息 / 插件 / 分区（代码层）
 
-- **站点信息**：`site.js`（名字/签名/头像/背景/页脚/giscus 已废弃不用）→ 上传 + `site.js?v=` 升级；
+- **站点信息**：`site.js`（名字/签名/头像/背景/页脚）→ 上传 + `site.js?v=` 升级；
 - **插件**：`plugins/` 一文件一插件。下线改 `enabled:false`；台词等改完升 `?v=`
   （如 `pet.js?v=15 → v16`）；点赞/统计/留言板已是云端版（`*.dynamic.js`）；
 - **分区**：`views/` 一文件一分区（account=我的 / board.dynamic=留言墙 / about / links）；
 - **兜底文章**：想新增"后端挂了也能看"的文章，复制 `content/posts/_template.js`
   并在 index.html「内容库引入区」加引入行，**同时**把它追加进 `js/api-loader.js`
   的 LOCAL_FILES 清单（两处都要，否则回退时不加载）。
+
+### 6.1 各配置项控制哪里（2026-08 改版后）
+
+| site.js 字段 | 显示位置 |
+|---|---|
+| `name` | ①导航栏 Logo（**只显示这个名字，无任何后缀**）②浏览器标签页标题 ③分享卡片标题 |
+| `tagline` | 仅首页横幅「你好，我是…」下方的一行小字（导航栏已不显示它） |
+| `intro` | 首页横幅简介段落 |
+| `footer` | 页脚一行字 |
+| `description` | 搜索引擎/分享卡片的描述文字 |
+
+> 导航栏 Logo 的渲染代码在 index.html 里，就一行：
+> `document.getElementById("logo").textContent = SITE.name;`
+> ——只输出 name 本身。想加后缀/图标才需要动这行（改完记得升 index.html 里 site.js 的 ?v=）。
+
+### 6.2 实例：手动改导航栏 Logo 文字（照抄即可）
+
+假设想把「Kuqi's Web」改成别的名字：
+
+1. 打开 `site.js`，改第一项：
+   ```js
+   name: "新名字",
+   ```
+   （名字里有英文单引号也没关系，代码会自动转义）
+2. 打开 `index.html`，搜 `site.js?v=`，把数字加一：
+   ```html
+   <script src="site.js?v=11"></script>   →   <script src="site.js?v=12"></script>
+   ```
+3. 上传两个文件：
+   ```powershell
+   scp C:\Users\wishdream\Desktop\DSH\my-site\site.js root@47.97.125.235:/var/www/my-site/site.js
+   scp C:\Users\wishdream\Desktop\DSH\my-site\index.html root@47.97.125.235:/var/www/my-site/index.html
+   ```
+4. 刷新网站（手机端强制刷新），导航栏即显示新名字；标签页标题同步变。
+
+### 6.3 手改 index.html 前后的安全清单（血泪教训）
+
+index.html 是整站的"壳"，一处手误全站变形。编辑前后过一遍：
+
+**改完后必须确认的 4 件事**：
+- [ ] 第一行是完整的 `<!DOCTYPE html>`（开头一个字符都不能少——曾因丢了 `<` 全站错乱）
+- [ ] 没有在 CSS 行里多敲字符（如 `;--`、孤立的数字）；改完样式刷新看效果是否生效
+- [ ] 变量名拼写完整：如 `var(--text)` 不是 `var(--tet)`；字体声明里没有多余前缀
+- [ ] 用浏览器打开本地文件先看一眼，正常再上传
+
+**上传前最后一步（可选但推荐）**：
+```powershell
+node tools-test\verify-live.js    # 部署后自动检查首行/标题/字体等关键点
+```
+
+### 6.4 相关联动点备忘
+
+- 改 `name` 后自动同步的：标签页标题、分享卡片 og:title（都在 index.html 由 JS 动态写入，无需手改静态 meta）；
+- 静态 `<head>` 里的 `<title>` 和 og 标签只是"爬虫兜底值"，最好顺手一起改保持一致；
+- RSS 里的标题在服务器脚本 `/opt/my-site/tools/update-rss.mjs` 顶部的 TITLE 常量里（每天 04:17 自动生成）。
 
 ## 七、缓存与版本号 ?v= 规则（重要性↑↑）
 
