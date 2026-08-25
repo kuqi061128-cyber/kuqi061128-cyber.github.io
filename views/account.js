@@ -110,7 +110,7 @@
       });
     },
 
-    /* ============ 已登录：账号卡 + 投稿 + 我的列表 ============ */
+    /* ============ 已登录：账号卡 + 投稿(作品/文章) + 我的列表 ============ */
     renderProfile(body, ctx, esc, me) {
       body.innerHTML =
         '<article class="post-detail">' +
@@ -122,20 +122,33 @@
               'background:transparent;color:var(--muted);cursor:pointer">退出登录</button>' +
           '</div>' +
 
-          /* 投稿表单 */
-          '<h3 style="margin:22px 0 10px;padding-left:12px;border-left:3px solid var(--accent);font-size:16px">🚀 投稿作品</h3>' +
-          '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">提交后进入待审核，站长确认后会在作品页展示。</p>' +
+          /* 投稿类型切换 + 表单 */
+          '<h3 style="margin:22px 0 10px;padding-left:12px;border-left:3px solid var(--accent);font-size:16px">✍️ 我要投稿</h3>' +
+          '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">提交后进入待审核，站长确认后会在对应栏目展示。</p>' +
+          '<div style="display:flex;gap:8px;margin-bottom:12px">' +
+            '<button id="tabWork" class="chip" style="cursor:pointer;border:0">🚀 投稿作品</button>' +
+            '<button id="tabPost" class="chip" style="cursor:pointer;border:0;background:transparent;color:var(--accent);border:1px solid rgba(56,189,248,.25)">📝 投稿文章</button>' +
+          '</div>' +
           '<form id="subForm">' +
-            '<input id="sTitle" placeholder="作品名称 *" required maxlength="60" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
-            '<input id="sDesc" placeholder="一句话简介" maxlength="120" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
-            '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">' +
-              '<input id="sTag" placeholder="分类标签，如 工具" maxlength="12" style="flex:1;min-width:110px;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit">' +
-              '<input id="sVer" placeholder="版本号，如 v1.0" maxlength="20" style="flex:1;min-width:110px;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit">' +
-              '<input id="sSize" placeholder="大小，如 12MB" maxlength="20" style="flex:1;min-width:110px;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit">' +
+            '<div id="workFields">' +
+              '<input id="sDesc" placeholder="一句话简介" maxlength="120" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
+              '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">' +
+                '<input id="sTag" placeholder="分类标签，如 工具" maxlength="12" style="flex:1;min-width:110px;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit">' +
+                '<input id="sVer" placeholder="版本号，如 v1.0" maxlength="20" style="flex:1;min-width:110px;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit">' +
+                '<input id="sSize" placeholder="大小，如 12MB" maxlength="20" style="flex:1;min-width:110px;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit">' +
+              '</div>' +
+              '<input id="sFile" placeholder="下载链接（http(s):// 开头，可留空）" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
             '</div>' +
-            '<input id="sFile" placeholder="下载链接（http(s):// 开头，可留空）" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
-            '<textarea id="sDetail" placeholder="详细介绍（支持 HTML：p / h3 / img 等），可留空" style="width:100%;min-height:80px;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;resize:vertical"></textarea>' +
-            '<button type="submit" id="sGo" style="margin-top:10px;width:100%;padding:11px;border:0;border-radius:8px;' +
+            '<div id="postFields" style="display:none">' +
+              '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">' +
+                '<input id="pCat" placeholder="分类，如 教程 / 随笔" maxlength="20" style="flex:1;min-width:110px;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit">' +
+                '<input id="pTags" placeholder="标签，逗号分隔，如 教程,前端" maxlength="60" style="flex:2;min-width:160px;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit">' +
+              '</div>' +
+              '<textarea id="pSummary" placeholder="摘要（一两句话，展示在列表卡片上）" maxlength="200" style="width:100%;min-height:54px;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;resize:vertical;margin-bottom:10px"></textarea>' +
+              '<textarea id="pContent" placeholder="正文（支持 HTML：<p>段落</p>、<h3>小标题</h3>、<img src=图片地址> 等）*" style="width:100%;min-height:140px;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;resize:vertical"></textarea>' +
+            '</div>' +
+            '<input id="sTitle" placeholder="标题 *" required maxlength="60" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
+            '<button type="submit" id="sGo" style="width:100%;padding:11px;border:0;border-radius:8px;' +
               'background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:15px;cursor:pointer">提 交 投 稿</button>' +
             '<div id="sTip" style="margin-top:8px;font-size:13px;text-align:center;min-height:18px;color:var(--muted)"></div>' +
           '</form>' +
@@ -145,70 +158,98 @@
           '<div id="mineList"><div style="color:var(--muted);font-size:13px;padding:8px 0">加载中…</div></div>' +
         '</article>';
 
+      const g = (sel) => body.querySelector(sel);
+
       /* 退出 */
-      body.querySelector("#btnOut").addEventListener("click", () => {
+      g("#btnOut").addEventListener("click", () => {
         window.DSH_AUTH.logout();
         location.reload();
       });
 
-      /* 投稿提交 */
+      /* 投稿类型切换 */
+      let subKind = "work";
+      function setKind(k) {
+        subKind = k;
+        const onWork = k === "work";
+        g("#workFields").style.display = onWork ? "" : "none";
+        g("#postFields").style.display = onWork ? "none" : "";
+        const tOn = 'cursor:pointer;border:0', tOff = 'cursor:pointer;border:0;background:transparent;color:var(--accent);border:1px solid rgba(56,189,248,.25)';
+        g("#tabWork").style.cssText = onWork ? tOn : tOff;
+        g("#tabPost").style.cssText = onWork ? tOff : tOn;
+      }
+      g("#tabWork").addEventListener("click", () => setKind("work"));
+      g("#tabPost").addEventListener("click", () => setKind("post"));
+
       const tip = (t, ok) => {
-        const n = body.querySelector("#sTip");
+        const n = g("#sTip");
         n.textContent = t;
         n.style.color = ok ? "#2f9e44" : "#d02b20";
       };
-      body.querySelector("#subForm").addEventListener("submit", (e) => {
-        e.preventDefault();
-        const g = (id) => body.querySelector(id).value.trim();
-        const payload = {
-          title: g("#sTitle"),
-          desc: g("#sDesc"),
-          tag: g("#sTag") || "待分类",
-          version: g("#sVer"),
-          size: g("#sSize"),
-          file: g("#sFile"),
-          detail: g("#sDetail"),
-          date: new Date().toISOString().slice(0, 10),
-        };
-        if (payload.file && !/^https?:\/\//i.test(payload.file)) return tip("❌ 下载链接必须以 http(s):// 开头", false);
 
-        const btn = body.querySelector("#sGo");
+      /* 提交 */
+      g("#subForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const api = window.DSH_API;
+        const title = g("#sTitle").value.trim();
+        if (!title) return tip("❌ 标题必填", false);
+        const btn = g("#sGo");
         btn.disabled = true;
+
+        let req;
+        if (subKind === "work") {
+          req = api.post("/api/works/submit", { data: {
+            title,
+            desc: g("#sDesc").value.trim(),
+            tag: g("#sTag").value.trim() || "待分类",
+            version: g("#sVer").value.trim(),
+            size: g("#sSize").value.trim(),
+            file: g("#sFile").value.trim(),
+            date: new Date().toISOString().slice(0, 10),
+          }});
+        } else {
+          req = api.post("/api/posts/submit", { data: {
+            title,
+            category: g("#pCat").value.trim() || "投稿",
+            tags: g("#pTags").value.trim(),
+            summary: g("#pSummary").value.trim(),
+            contentHtml: g("#pContent").value,
+            date: new Date().toISOString().slice(0, 10),
+          }});
+        }
+
         tip("提交中…", true);
-        window.DSH_API.post("/api/works/submit", { data: payload })
-          .then(() => {
-            tip("✅ 投稿成功！等待站长审核，可在下方「我的投稿」查看进度", true);
-            e.target.reset();
-            loadMine();
-          })
-          ["catch"]((err) => {
-            tip("❌ " + err.message + (err.message.indexOf("403") > -1 ? "（登录可能已过期，请退出重登）" : ""), false);
-          })
-          ["finally"](() => { btn.disabled = false; });
+        req.then(() => {
+          tip(subKind === "work" ? "✅ 作品投稿成功！等待审核，进度见下方列表" : "✅ 文章投稿成功！等待审核，进度见下方列表", true);
+          g("#sTitle").value = "";
+          e.target.querySelectorAll("textarea,input[placeholder*='简介'],input[placeholder*='摘要']").forEach(n => n.value = "");
+          loadMine();
+        })["catch"]((err) => {
+          tip("❌ " + err.message + (err.message.indexOf("403") > -1 ? "（登录可能已过期，请退出重登）" : ""), false);
+        })["finally"](() => { btn.disabled = false; });
       });
 
-      /* 我的投稿列表 */
+      /* 我的投稿列表（作品+文章合并） */
       function loadMine() {
-        const box = body.querySelector("#mineList");
-        window.DSH_API.get("/api/works/mine")
-          .then((res) => {
-            const rows = res.data || [];
-            if (!rows.length) {
-              box.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">还没有投稿记录</div>';
-              return;
-            }
-            box.innerHTML = rows.map((w) => {
-              const pending = w.status !== "已发布";
-              return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;' +
-                'padding:9px 4px;border-bottom:1px dashed rgba(128,128,128,.25);font-size:14px">' +
-                '<span>' + esc(w.title || "") + '</span>' +
-                '<span style="font-size:12px;white-space:nowrap;color:' + (pending ? '#eab308' : '#2f9e44') + '">' +
-                  w.status + '</span></div>';
-            }).join("");
-          })
-          ["catch"](() => {
-            box.innerHTML = '<div style="color:#d02b20;font-size:13px;padding:8px 0">加载失败（登录可能过期，请重新登录）</div>';
-          });
+        const box = g("#mineList");
+        const auth = { Authorization: "Bearer " + window.DSH_AUTH.token() };
+        Promise.all([
+          window.DSH_API.get("/api/works/mine").then(r => (r.data || []).map(w => ({ ...w, kind: "🚀 作品" })))["catch"](() => []),
+          window.DSH_API.get("/api/posts/mine").then(r => (r.data || []).map(p => ({ ...p, kind: "📝 文章" })))["catch"](() => []),
+        ]).then(([works, posts]) => {
+          const rows = works.concat(posts);
+          if (!rows.length) {
+            box.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">还没有投稿记录</div>';
+            return;
+          }
+          box.innerHTML = rows.map((w) => {
+            const pending = w.status !== "已发布";
+            return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;' +
+              'padding:9px 4px;border-bottom:1px dashed rgba(128,128,128,.25);font-size:14px">' +
+              '<span>' + w.kind + ' · ' + esc(w.title || "") + '</span>' +
+              '<span style="font-size:12px;white-space:nowrap;color:' + (pending ? '#eab308' : '#2f9e44') + '">' +
+                w.status + '</span></div>';
+          }).join("");
+        });
       }
       loadMine();
     },

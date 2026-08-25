@@ -518,7 +518,7 @@
 </script>
 <!-- ================= 动态内容：优先 Strapi 后台接口，失败自动回退本地 JS 内容 ================= -->
 <script src="js/api.js"></script>
-<script src="js/api-loader.js?v=1"></script>
+<script src="js/api-loader.js?v=3"></script>
 <!-- 本地 content/*.js 保留作兜底数据源（清单见 js/api-loader.js 的 LOCAL_FILES），请勿删除 -->
 
 <!-- ================= 分区模块：扩展分区（如留言板）在 views/ 目录，导航自动生成 ================= -->
@@ -529,7 +529,7 @@
 <script src="views/board.dynamic.js?v=2"></script>
 <script src="views/about.js?v=2"></script>
 <script src="views/links.js"></script>
-<script src="views/account.js?v=1"></script>
+<script src="views/account.js?v=2"></script>
 
 <script>window.DSH_CONTENT_READY = window.DSH_CONTENT_READY || Promise.resolve();</script>
 <script>
@@ -853,7 +853,8 @@ function renderPost(id) {
     '<a class="back-link" href="#/articles">← 返回文章列表</a>' +
     '<article class="post-detail">' +
     '<div class="post-meta"><span class="cat">' + esc(a.category) + '</span>' +
-    '<span>📅 ' + a.date + '</span><span>👀 ' + articleViews(id) + ' 浏览</span></div>' +
+    '<span>📅 ' + a.date + '</span><span>👀 ' + articleViews(id) + ' 浏览</span>' +
+    (a.authorName ? '<span>✍️ ' + esc(a.authorName) + '</span>' : '') + '</div>' +
     '<h1>' + esc(a.title) + '</h1>' +
     '<div class="post-content">' + resolveDetailImgs(a, a.content) + '</div>' +
     '<div class="post-tags">' + a.tags.map(t =>
@@ -881,6 +882,7 @@ function renderWork(id) {
   if (w.version) meta.push('<span>🔖 ' + esc(w.version) + '</span>');
   if (w.date) meta.push('<span>📅 ' + esc(w.date) + '</span>');
   if (w.size) meta.push('<span>📦 ' + esc(w.size) + '</span>');
+  if (w.authorName) meta.push('<span>👤 ' + esc(w.authorName) + '</span>');
   const dl = w.file
     ? '<a class="dl-big" href="' + esc(w.file) + '"' +
       (/^https?:/i.test(w.file) ? ' target="_blank" rel="noopener"' : ' download') +

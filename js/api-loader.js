@@ -58,6 +58,11 @@
     /* 字段名对齐引擎约定 */
     if (raw.contentHtml != null) out.content = raw.contentHtml;
 
+    /* 作者用户名平铺出来给详情页显示「发布人」用 */
+    if (raw.author && typeof raw.author === "object" && raw.author.username) {
+      out.authorName = raw.author.username;
+    }
+
     out._dir = ""; /* API 模式下没有同名文件夹约定（导入时已改写为绝对地址） */
     return out;
   }
@@ -84,8 +89,10 @@
   function fetchAll() {
     var q = "?pagination[pageSize]=200";
     return Promise.all([
+      // authorName 是普通字段随条目返回；媒体字段按需展开 url
       API.withTimeout(API.get("/api/posts" + q + "&sort=date:desc"), TIMEOUT_MS),
-      API.withTimeout(API.get("/api/works" + q + "&populate=*"), TIMEOUT_MS),
+      API.withTimeout(API.get("/api/works" + q +
+        "&populate[coverImg][fields][0]=url&populate[cover][fields][0]=url&populate[icon][fields][0]=url"), TIMEOUT_MS),
       API.withTimeout(API.get("/api/links" + q), TIMEOUT_MS)
     ]);
   }
