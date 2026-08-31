@@ -39,15 +39,22 @@ def main():
     # 默认基准=远程指针（本地历史的祖先）；API 合成推送造成历史分叉后，
     # 可用 DIFF_BASE 指定本地仍存在的旧提交 sha 来算差异
     base_for_diff = os.environ.get("DIFF_BASE") or remote_sha
-    files = subprocess.run(
-        ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", base_for_diff, local],
-        encoding="utf-8", capture_output=True, text=True).stdout.split()
-    if not files:
+    # --name-status 输出形如 "M\tindex.html" / "D\tplugins/like.js"，
+    # 用状态区分修改/新增（需上传内容）与删除（tree 条目 sha=null 即可）
+    raw_diff = subprocess.run(
+        ["git", "diff-tree", "--no-commit-id", "--name-status", "-r", base_for_diff, local],
+        encoding="utf-8", capture_output=True, text=True).stdout
+    diffs = [ln.split("\t", 1) for ln in raw_diff.splitlines() if "\t" in ln]
+    if not diffs:
         sys.exit("本地没有待推送的改动")
-    print("远程:", remote_sha[:7], "| 本地:", local[:7], "| 文件数:", len(files))
+    print("远程:", remote_sha[:7], "| 本地:", local[:7], "| 文件数:", len(diffs))
 
     entries = []
-    for p in files:
+    for status, p in diffs:
+        if status == "D":   # 删除：tree 条目 sha=null，无需读文件
+            entries.append({"path": p, "mode": "100644", "type": "blob", "sha": None})
+            print("  delete:", p)
+            continue
         raw = open(p, "rb").read()
         try:
             # 文本文件按 UTF-8 上传
