@@ -20,6 +20,12 @@
     const api = window.DSH_API;
     P._el = el; P._ctx = ctx;
 
+    /* 重绘前保留不蒜子已填的 PV/UV 值（脚本只挂一次，重绘后不再自动填，故需手动回填） */
+    const oldPv = document.getElementById("busuanzi_value_site_pv");
+    const oldUv = document.getElementById("busuanzi_value_site_uv");
+    const pvVal = (oldPv && oldPv.textContent.trim() && oldPv.textContent !== "…") ? oldPv.textContent : "…";
+    const uvVal = (oldUv && oldUv.textContent.trim() && oldUv.textContent !== "…") ? oldUv.textContent : "…";
+
     const likes = P._likes != null ? P._likes : ctx.state.likes;
     const msgs = P._msgs != null ? P._msgs : "…";
 
@@ -28,26 +34,27 @@
       '<div class="widget-title"><span><span class="ico">📊</span>站点统计</span></div>' +
       row("文章数", ctx.ARTICLES.length) +
       row("作品数", ctx.WORKS.length) +
-      row("总访问量", '<span id="busuanzi_value_site_pv">…</span>') +
-      row("访客数", '<span id="busuanzi_value_site_uv">…</span>') +
+      row("总访问量", '<span id="busuanzi_value_site_pv">' + pvVal + '</span>') +
+      row("访客数", '<span id="busuanzi_value_site_uv">' + uvVal + '</span>') +
       row("获赞数", likes) +
       row("留言数", msgs);
 
-    /* 不蒜子：SPA 重绘会生成新 span，重挂脚本让它重新取数填充 */
-    const old = document.getElementById("busuanzi-script");
-    if (old) old.remove();
-    const b = document.createElement("script");
-    b.id = "busuanzi-script";
-    b.async = true;
-    b.src = "https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js";
-    document.body.appendChild(b);
-
-    setTimeout(() => {
-      const pv = document.getElementById("busuanzi_value_site_pv");
-      const uv = document.getElementById("busuanzi_value_site_uv");
-      if (pv && !pv.textContent.trim().replace("…", "")) pv.textContent = "—";
-      if (uv && !uv.textContent.trim().replace("…", "")) uv.textContent = "—";
-    }, 6000);
+    /* 不蒜子：脚本只挂一次，避免 SPA 重绘时反复下载+请求堆积 */
+    if (!P._bsAdded) {
+      P._bsAdded = true;
+      const b = document.createElement("script");
+      b.id = "busuanzi-script";
+      b.async = true;
+      b.src = "https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js";
+      document.body.appendChild(b);
+      /* 首次加载兜底：6 秒后若仍为 … 显示 — */
+      setTimeout(function () {
+        const pv = document.getElementById("busuanzi_value_site_pv");
+        const uv = document.getElementById("busuanzi_value_site_uv");
+        if (pv && pv.textContent === "…") pv.textContent = "—";
+        if (uv && uv.textContent === "…") uv.textContent = "—";
+      }, 6000);
+    }
 
     /* ---- 异步取云端计数，取到后只重绘一次 ---- */
     if (!P._fetched) {

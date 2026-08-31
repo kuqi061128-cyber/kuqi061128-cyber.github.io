@@ -484,14 +484,14 @@
   window.BLOG_PLUGINS = [];
   window.registerPlugin = function (def) { BLOG_PLUGINS.push(def); };
 </script>
-<script src="plugins/clock.js"></script>
-<script src="plugins/quote.js"></script>
+<script src="plugins/clock.js?v=1"></script>
+<script src="plugins/quote.js?v=1"></script>
 <script src="plugins/like.dynamic.js?v=4"></script>
 <script src="plugins/pet.js?v=15"></script>
-<script src="plugins/site-stats.dynamic.js?v=1"></script>
-<script src="plugins/hot-posts.js"></script>
-<script src="plugins/categories.js"></script>
-<script src="plugins/tag-cloud.js"></script>
+<script src="plugins/site-stats.dynamic.js?v=2"></script>
+<script src="plugins/hot-posts.js?v=1"></script>
+<script src="plugins/categories.js?v=1"></script>
+<script src="plugins/tag-cloud.js?v=1"></script>
 <script src="plugins/reading-aid.js?v=2"></script>
 
 <!-- ================= 内容库：文章在 content/posts/（一篇一个文件），作品在 content/works.js ================= -->
@@ -517,7 +517,7 @@
   window.registerSite = function (def) { BLOG_SITES.push(def); };
 </script>
 <!-- ================= 动态内容：优先 Strapi 后台接口，失败自动回退本地 JS 内容 ================= -->
-<script src="js/api.js"></script>
+<script src="js/api.js?v=1"></script>
 <script src="js/api-loader.js?v=3"></script>
 <!-- 本地 content/*.js 保留作兜底数据源（清单见 js/api-loader.js 的 LOCAL_FILES），请勿删除 -->
 
@@ -528,7 +528,7 @@
 </script>
 <script src="views/board.dynamic.js?v=3"></script>
 <script src="views/about.js?v=3"></script>
-<script src="views/links.js"></script>
+<script src="views/links.js?v=1"></script>
 <script src="views/account.js?v=6"></script>
 <script src="views/comments.js?v=1"></script>
 
@@ -549,7 +549,7 @@ window.DSH_CONTENT_READY.then(function () {
     pct.textContent = Math.round(p);
     runner.style.left = (8 + p * 0.84) + "%";   /* 小人在轨道 8%~92% 区间随进度前移 */
   }
-  /* 快速起步 → 渐近逼近 90%，等 window load 事件才冲 100（进度真实反映加载，不做假进度） */
+  /* 快速起步 → 渐近逼近 90%，等内容就绪 + 首屏渲染完才冲 100 */
   (function tick() {
     if (done) return;
     setP(90 - (90 - p) * 0.92);
@@ -565,9 +565,12 @@ window.DSH_CONTENT_READY.then(function () {
       setTimeout(function () { loader.remove(); }, 500);
     }, 380);
   }
-  if (document.readyState === "complete") finish();
-  else window.addEventListener("load", finish);
-  setTimeout(finish, 12000);   /* 保底：某资源卡死时 12 秒后也放行进站 */
+  /* 本段已在 DSH_CONTENT_READY.then 内 → 内容数据已就绪。
+     再等首屏渲染（mountPlugins/route 在本段之后同步执行）本轮结束后即放行，
+     不再死等 window.load（它会被慢脚本/大资源拖住，假进度卡 90%）。load 仅作兜底。 */
+  setTimeout(finish, 0);
+  window.addEventListener("load", finish);   /* 资源提前 load 完也放行（幂等 done 守卫） */
+  setTimeout(finish, 8000);   /* 保底：某资源卡死时 8 秒后也放行进站 */
 })();
 
 /* ================= 站点配置（在 site.js 文件里修改） ================= */
