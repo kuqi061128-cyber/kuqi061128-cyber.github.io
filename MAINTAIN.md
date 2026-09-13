@@ -32,6 +32,8 @@
 | 给文章加封面图 | 后台 Post 编辑页 → cover 字段传图 | 列表自动变左图右文，见 12.2 |
 | 看访问量 / 7 天趋势 | 不用管 | 右栏「站点统计」自建统计，见 12.3 |
 | 改后端（Strapi）功能 | 改 schema/控制器 → scp → `pm2 restart strapi` | 见第十二节 |
+| 后台保存/上传报「操作太频繁」 | 一般不会了（限流已拆分） | 若仍出现，见 12.4 调整后台额度 |
+| 看/改限流额度 | 服务器 `/etc/nginx/conf.d/00-ratelimit.conf` | 后台 120/分，公开接口 10/分 |
 
 ## 一、网站现在是怎么工作的（30 秒版）
 
@@ -336,7 +338,7 @@ pm2 restart strapi
 - 特性：接口不通时直接退出、不动任何文件；文章删了重跑会自动清理对应骨架页。
 - 访问 `https://kuqis.cloud/p/4.html` 会看到文章信息并**自动跳转**到 `#/post/4`。
 
-## 十二、后端功能：评论回复 / 文章封面 / 自建统计（2026-09-13 新增）
+## 十二、后端功能与运维配置（2026-09-13 新增）
 
 这三项动了 Strapi 的数据结构，都在后端 `/opt/my-site/backend/` 里完成的。
 **改后端源码的通用流程**：改文件 → `scp` 上传 → `pm2 restart strapi`
@@ -368,6 +370,23 @@ pm2 restart strapi
   ```bash
   mysql strapi_db -e "UPDATE visits SET count=0 WHERE date='2026-09-13'"
   ```
+
+### 12.4 运维配置加固（限流 / 密钥 / 日志 / 索引）
+
+本次给后端补了四处配置，都属于"平时不用管、坏了要知道去哪看"的类型：
+
+| 项 | 现状 | 说明 |
+|---|---|---|
+| **限流分两套** | 后台 120 次/分钟（burst 60）；公开接口 10 次/分钟（burst 5） | 旧配置把 `/admin`、`/upload` 和公开接口放同一个限流额度，**你在后台连续保存、批量传图会被当成灌水返回 429**（已实测第 7 次就中）。现在后台走 `dsh_admin` zone，公开接口走 `dsh_write` zone。改限流数值：`/etc/nginx/conf.d/00-ratelimit.conf`（改完 `nginx -t && systemctl reload nginx`） |
+| **ENCRYPTION_KEY** | 已写入 `backend/.env` | Strapi 加密用密钥。**写入后不要随意更换**（更换会导致依赖它的加密数据无法解密）。缺失时启动日志会有 `Encryption key is missing` 告警 |
+| **PM2 日志轮转** | `pm2-logrotate` 已装：单文件 10M、保留 7 份、压缩、每天 0 点轮转 | 在此之前 `strapi-out.log` 会无限增长（每条请求写一行）。查配置：`pm2 conf pm2-logrotate` |
+| **评论查询索引** | `comments` 表已有 `idx_target (target_type, target_id)` | 每篇文章/作品详情页都按这两个字段查评论，加索引后不再全表扫描 |
+
+**一次性脚本已清理**：`src/index.js` 里原来有 4 个靠"放标记文件"触发的批量运维函数（补发布、清理 E2E、撤回等），都属于危险操作且已完成使命，已全部移除；今后要做一次性运维请在 SSH 里临时执行脚本，不要长期留在启动流程里。
+
+> 💡 插图小技巧：上传的图片 Strapi 会自动生成 `thumbnail_ / small_ / medium_ / large_` 多个尺寸
+> （在 `public/uploads/` 里能看到）。想让文章加载更快，插图时可以从 Media Library 里直接复制
+> **medium 或 large 版本的地址**，而不是原图地址。
 
 ## 十三、常见问题
 
