@@ -381,6 +381,7 @@ pm2 restart strapi
 | **限流分两套** | 后台 120 次/分钟（burst 60）；公开接口 10 次/分钟（burst 5） | 旧配置把 `/admin`、`/upload` 和公开接口放同一个限流额度，**你在后台连续保存、批量传图会被当成灌水返回 429**（已实测第 7 次就中）。现在后台走 `dsh_admin` zone，公开接口走 `dsh_write` zone。改限流数值：`/etc/nginx/conf.d/00-ratelimit.conf`（改完 `nginx -t && systemctl reload nginx`） |
 | **ENCRYPTION_KEY** | 已写入 `backend/.env` | Strapi 加密用密钥。**写入后不要随意更换**（更换会导致依赖它的加密数据无法解密）。缺失时启动日志会有 `Encryption key is missing` 告警 |
 | **PM2 日志轮转** | `pm2-logrotate` 已装：单文件 10M、保留 7 份、压缩、每天 0 点轮转 | 在此之前 `strapi-out.log` 会无限增长（每条请求写一行）。查配置：`pm2 conf pm2-logrotate` |
+| **安全响应头** | nosniff / X-Frame-Options / Referrer-Policy / **HSTS**（2026-09-13 新增，一年有效 + 含子域） | 位置：`/etc/nginx/snippets/dsh-security-headers.conf`。注意 HSTS 会让浏览器强制 HTTPS 一年，若以后有子域没上 HTTPS 需把 `includeSubDomains` 去掉 |
 | **评论查询索引** | `comments` 表已有 `idx_target (target_type, target_id)` | 每篇文章/作品详情页都按这两个字段查评论，加索引后不再全表扫描 |
 
 **一次性脚本已清理**：`src/index.js` 里原来有 4 个靠"放标记文件"触发的批量运维函数（补发布、清理 E2E、撤回等），都属于危险操作且已完成使命，已全部移除；今后要做一次性运维请在 SSH 里临时执行脚本，不要长期留在启动流程里。

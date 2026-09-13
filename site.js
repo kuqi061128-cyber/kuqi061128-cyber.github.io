@@ -14,7 +14,9 @@ window.BLOG_SITE = {
   description: "Kuqi 的个人网站：分享教程、随笔、作品与下载。",  // 站点简介（搜索引擎和分享卡片摘要）
 
   /* 头像 */
-  avatar: "assets/img/preview.gif?v=3",  // 头像图片路径（支持 PNG/JPG/GIF 动图）；留空 "" 则显示名字首字圆形占位
+  avatar: "assets/img/avatar.gif?v=1",  // 头像：96px/9帧压缩动图(33KB，原 preview.gif 131KB)
+  // 想要更极致的体积可换成静态版：assets/img/avatar-static.webp?v=1 （仅 4KB，不动画）
+  // 留空 "" 则显示名字首字圆形占位
 
   /* 背景 */
   backgroundVideo: "assets/background.mp4?v=4",  // 动态视频背景（mp4/webm，静音循环播放）；留空 "" 则用静态背景图。换视频文件后把 v=4 改成 v=5 可强制访客刷新缓存

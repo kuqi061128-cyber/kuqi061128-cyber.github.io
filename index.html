@@ -583,7 +583,7 @@
 <!-- ================= 开场加载屏：小人沿进度条奔跑，加载完淡出 ================= -->
 <div id="loader">
   <div class="loader-box">
-    <div class="loader-stage"><img class="loader-runner" src="assets/img/runner.png" alt="加载中"></div>
+    <div class="loader-stage"><img class="loader-runner" src="assets/img/runner.png?v=2" alt="加载中"></div>
     <div class="loader-track"><div class="loader-fill" id="loaderFill"></div></div>
     <div class="loader-pct"><span id="loaderPct">0</span>%</div>
   </div>
@@ -617,7 +617,7 @@
 <div class="toast" id="toast"></div>
 
 <!-- ================= 站点信息：博客名 / 头像 / 介绍 / 背景图 / 页脚，改 site.js 即可 ================= -->
-<script src="site.js?v=12"></script>
+<script src="site.js?v=13"></script>
 
 <!-- ================= 插件库：一个插件一个文件，升级/更换/下线只动 plugins/ 目录 ================= -->
 <script>
@@ -1086,6 +1086,25 @@ function shareBar(kind, id, title) {
     "</div>";
 }
 
+/* 非详情页：把 og 标签重置为站点信息，并移除详情页留下的 JSON-LD
+   （SPA 内从文章返回首页时，否则会残留上一篇文章的标题/描述） */
+function resetSeo() {
+  const set = function (sel, val) {
+    const m = document.querySelector(sel);
+    if (m && val) m.setAttribute("content", val);
+  };
+  set('meta[name="description"]', SITE.description);
+  set('meta[property="og:type"]', "website");
+  set('meta[property="og:title"]', SITE.name);
+  set('meta[property="og:site_name"]', SITE.name);
+  set('meta[property="og:description"]', SITE.description);
+  set('meta[property="og:url"]', SITE.url || (location.origin + "/"));
+  const setImg = document.querySelector('meta[property="og:image"]');
+  if (setImg) setImg.setAttribute("content", siteBase() + "/assets/background.jpg");
+  const ld = document.getElementById("dsh-jsonld");
+  if (ld) ld.remove();
+}
+
 /* 详情页动态 SEO：og 标签 + JSON-LD 结构化数据（给执行 JS 的爬虫） */
 function applyPostSeo(a) {
   const url = postShareUrl(a.id);
@@ -1099,6 +1118,8 @@ function applyPostSeo(a) {
   set('meta[property="og:title"]', a.title);
   set('meta[property="og:description"]', desc);
   set('meta[property="og:url"]', url);
+  /* 分享卡片配图：文章有 cover 就用封面，否则回退站点背景图 */
+  if (a.cover) set('meta[property="og:image"]', /^https?:/i.test(a.cover) ? a.cover : siteBase() + a.cover);
 
   let s = document.getElementById("dsh-jsonld");
   if (!s) {
@@ -1508,6 +1529,7 @@ function route() {
     lastListScroll = window.scrollY || 0;
   }
   articleKeyword = "";
+  resetSeo();          // 先重置为站点默认，文章详情页稍后会重新写入自己的 og/JSON-LD
   let zoomed = false;
   const tryZoom = () => {   // 详情页：尝试从被点卡片的位置放大展开
     const detail = mainView.querySelector(".post-detail, .work-detail");
