@@ -34,6 +34,7 @@
 | 改后端（Strapi）功能 | 改 schema/控制器 → scp → `pm2 restart strapi` | 见第十二节 |
 | 后台保存/上传报「操作太频繁」 | 一般不会了（限流已拆分） | 若仍出现，见 12.4 调整后台额度 |
 | 看/改限流额度 | 服务器 `/etc/nginx/conf.d/00-ratelimit.conf` | 后台 120/分，公开接口 10/分 |
+| 开注册邮箱验证 / 找回密码 | 已就绪，只差 SMTP 凭据 | 见 12.5（一条命令启用） |
 
 ## 一、网站现在是怎么工作的（30 秒版）
 
@@ -387,6 +388,40 @@ pm2 restart strapi
 > 💡 插图小技巧：上传的图片 Strapi 会自动生成 `thumbnail_ / small_ / medium_ / large_` 多个尺寸
 > （在 `public/uploads/` 里能看到）。想让文章加载更快，插图时可以从 Media Library 里直接复制
 > **medium 或 large 版本的地址**，而不是原图地址。
+
+### 12.5 注册邮箱验证 + 找回密码（代码已就绪，等一处 SMTP 配置）
+
+**当前状态**：页面、接口、前端提示、邮件配置、一键脚本**全部就绪**，只差 SMTP 凭据。
+⚠️ **在配好 SMTP 之前，邮箱验证开关保持关闭**——因为开关开了却发不出邮件，新用户会注册完收不到验证信、直接登录不了。
+
+已就绪的部分：
+
+| 部分 | 位置 | 作用 |
+|---|---|---|
+| 邮箱验证落地页 | `/confirm.html` | 邮件里的链接指向这里，自动完成验证并显示中文结果（链接过期/已用过都有明确提示） |
+| 重置密码页 | `/reset.html` | 忘记密码邮件的落地页，输入两次新密码即可完成重置 |
+| 前端流程适配 | `views/account.js` | 注册成功待验证 → 明确提示去邮箱；未验证就登录 → 提示 + 「📧 重新发送验证邮件」按钮 |
+| 邮件服务配置 | `config/plugins.js` | **只有 `.env` 里配了 `SMTP_HOST` 才会启用**，没配时完全不影响注册/登录等其它功能 |
+| 邮件 provider | `@strapi/provider-email-nodemailer@5.52.1` | 已安装（与 Strapi 核心同版本，Node 20 兼容） |
+| 一键启用脚本 | `/opt/my-site/tools/apply-email.py` | 写 `.env` → 开启验证 → 换中文邮件模板 → 重启 →（可选）真实发信自测 |
+
+**启用步骤**（拿到邮箱授权码后，一条命令）：
+
+```bash
+SMTP_HOST=smtp.qq.com SMTP_USER=你的邮箱@qq.com SMTP_PASS=授权码 \
+SMTP_FROM_NAME="Kuqi's Web" SMTP_FROM_EMAIL=你的邮箱@qq.com \
+python3 /opt/my-site/tools/apply-email.py --apply --selftest
+```
+
+- 只看不改：`python3 /opt/my-site/tools/apply-email.py --dry-run`
+- 回滚（关闭邮箱验证，保留找回密码）：`python3 /opt/my-site/tools/apply-email.py --rollback`
+
+**需要准备**：一个邮箱 + **SMTP 授权码**（不是登录密码）。
+QQ 邮箱拿法：设置 → 账户 → 开启「IMAP/SMTP 服务」→ 短信验证 → 得到 16 位授权码。
+
+**启用后的效果**：
+- 新用户注册后必须点邮件里的链接才能登录（未验证时登录会提示，并可一键重发验证邮件）；
+- 用户忘记密码可**自助重置**，不用再找站长改密码。
 
 ## 十三、常见问题
 

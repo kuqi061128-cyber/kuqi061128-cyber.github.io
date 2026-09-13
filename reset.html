@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>重置密码 - Kuqi's Web</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/assets/img/dsh.ico">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 24px; background: #0f172a; color: #e2e8f0; line-height: 1.75;
+    font-family: "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+  }
+  .card {
+    width: min(520px, 100%); background: rgba(30, 41, 59, .65);
+    border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 32px 28px;
+  }
+  .ico { font-size: 42px; line-height: 1; text-align: center; margin-bottom: 10px; }
+  h1 { font-size: 20px; margin-bottom: 8px; text-align: center; }
+  p.sub { color: #94a3b8; font-size: 14px; margin-bottom: 18px; text-align: center; word-break: break-all; }
+  label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
+  input {
+    width: 100%; padding: 11px 12px; margin-bottom: 14px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,.12); background: transparent;
+    color: inherit; font-size: 15px; font-family: inherit;
+  }
+  input:focus { outline: none; border-color: #38bdf8; }
+  button {
+    width: 100%; padding: 12px; border: 0; border-radius: 8px; cursor: pointer;
+    background: linear-gradient(135deg, #38bdf8, #818cf8); color: #fff; font-size: 15px;
+  }
+  button:disabled { opacity: .6; cursor: default; }
+  .tip { margin-top: 10px; font-size: 13px; text-align: center; min-height: 18px; color: #94a3b8; }
+  .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+  a.btn {
+    font-size: 13px; text-decoration: none; color: #fff; padding: 9px 22px; border-radius: 999px;
+    background: linear-gradient(135deg, #38bdf8, #818cf8);
+  }
+  a.btn.ghost { background: transparent; color: #94a3b8; border: 1px solid rgba(255,255,255,.12); }
+  body[data-state="ok"] h1 { color: #6ee7b7; }
+  body[data-state="err"] h1 { color: #fca5a5; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="ico" id="ico">🔑</div>
+    <h1 id="title">设置新密码</h1>
+    <p class="sub" id="sub">请输入你的新密码（至少 6 位）。</p>
+
+    <form id="form">
+      <label for="p1">新密码</label>
+      <input id="p1" type="password" minlength="6" autocomplete="new-password" placeholder="至少 6 位" required>
+      <label for="p2">确认新密码</label>
+      <input id="p2" type="password" minlength="6" autocomplete="new-password" placeholder="再输一次" required>
+      <button type="submit" id="go">确 认 修 改</button>
+      <div class="tip" id="tip"></div>
+    </form>
+
+    <div class="actions" id="actions" hidden>
+      <a class="btn" href="/#/account">去登录</a>
+      <a class="btn ghost" href="/">返回首页</a>
+    </div>
+  </div>
+
+<script>
+/* 重置密码落地页
+   邮件里的链接指向  https://kuqis.cloud/reset.html?code=<token>
+   本页拿 code 调 /api/auth/reset-password 完成重置。独立页面，不依赖主站脚本。 */
+(function () {
+  var code = new URLSearchParams(location.search).get("code") || "";
+  var ico = document.getElementById("ico");
+  var title = document.getElementById("title");
+  var sub = document.getElementById("sub");
+  var form = document.getElementById("form");
+  var tip = document.getElementById("tip");
+  var actions = document.getElementById("actions");
+
+  function fail(t, m) {
+    document.body.setAttribute("data-state", "err");
+    ico.textContent = "⚠️";
+    title.textContent = t;
+    sub.textContent = m;
+    form.hidden = true;
+    actions.hidden = false;
+  }
+
+  if (!code) {
+    fail("链接不完整", "这个地址里没有重置参数，请从邮件里完整复制链接打开。");
+    return;
+  }
+
+  function say(t, ok) {
+    tip.textContent = t;
+    tip.style.color = ok ? "#2f9e44" : "#d02b20";
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var p1 = document.getElementById("p1").value;
+    var p2 = document.getElementById("p2").value;
+    if (p1.length < 6) return say("❌ 新密码至少 6 位", false);
+    if (p1 !== p2) return say("❌ 两次输入的密码不一致", false);
+
+    var btn = document.getElementById("go");
+    btn.disabled = true;
+    say("提交中…", true);
+    fetch("/api/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: code, password: p1, passwordConfirmation: p2 }),
+    })
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, status: r.status, d: d }; });
+      })
+      .then(function (res) {
+        if (res.ok) {
+          document.body.setAttribute("data-state", "ok");
+          ico.textContent = "✅";
+          title.textContent = "密码已重置";
+          sub.textContent = "现在可以用新密码登录了。";
+          form.hidden = true;
+          actions.hidden = false;
+          return;
+        }
+        var m = (res.d && res.d.error && res.d.error.message) || ("HTTP " + res.status);
+        btn.disabled = false;
+        if (/incorrect|invalid|expired|not found/i.test(m)) {
+          fail("链接已失效", "重置链接可能已过期或已被使用，请回到网站重新申请找回密码。");
+        } else if (/429/.test(m)) {
+          say("❌ 操作太频繁，请等一分钟再试", false);
+        } else {
+          say("❌ " + m, false);
+        }
+      })
+      ["catch"](function () {
+        btn.disabled = false;
+        say("❌ 网络异常，请稍后重试", false);
+      });
+  });
+})();
+</script>
+</body>
+</html>

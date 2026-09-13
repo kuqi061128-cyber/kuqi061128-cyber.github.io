@@ -65,6 +65,7 @@
             '<button type="submit" id="fGo" style="width:100%;padding:11px;border:0;border-radius:8px;' +
               'background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:15px;cursor:pointer">登 录</button>' +
             '<div id="fTip" style="margin-top:10px;font-size:13px;text-align:center;min-height:18px;color:var(--muted)"></div>' +
+            '<div id="fExtra" style="margin-top:10px;text-align:center"></div>' +
           '</form>' +
         '</article>';
 
@@ -74,6 +75,36 @@
         n.textContent = t;
         n.style.color = ok ? "#2f9e44" : "#d02b20";
       };
+
+      /* 邮箱验证相关：重发验证邮件按钮（注册成功待验证 / 登录提示未验证时出现） */
+      function showResend(email) {
+        const box = body.querySelector("#fExtra");
+        if (!box) return;
+        box.innerHTML = '<button type="button" id="btnResend" class="chip" ' +
+          'style="cursor:pointer;background:transparent;color:var(--accent);' +
+          'border:1px solid rgba(56,189,248,.35);padding:7px 18px">📧 重新发送验证邮件</button>';
+        const btn = box.querySelector("#btnResend");
+        btn.addEventListener("click", () => {
+          const mail = (email || body.querySelector("#fMail").value ||
+            body.querySelector("#fUser").value || "").trim();
+          if (!mail || mail.indexOf("@") < 0) {
+            return tip("请先在上方填写你的注册邮箱", false);
+          }
+          btn.disabled = true;
+          btn.textContent = "发送中…";
+          window.DSH_API.post("/api/auth/send-email-confirmation", { email: mail })
+            .then(() => {
+              btn.textContent = "✅ 已发送，请查收（含垃圾邮件箱）";
+            })
+            ["catch"]((err) => {
+              const m = err.message || "";
+              btn.disabled = false;
+              btn.textContent = "📧 重新发送验证邮件";
+              tip(/429/.test(m) ? "❌ 操作太频繁，请等一分钟再试"
+                : "❌ 发送失败：邮件服务暂时不可用，请联系站长", false);
+            });
+        });
+      }
 
       const mailInput = body.querySelector("#fMail");
       body.querySelector("#tabLogin").addEventListener("click", () => {
@@ -107,6 +138,14 @@
 
         req.then((res) => {
           const jwt = res.jwt || res.token;
+          /* 开启邮箱验证后：注册成功但不会立即签发登录令牌，提示去邮箱点验证链接 */
+          if (!jwt && res.user) {
+            const mail = res.user.email || body.querySelector("#fMail").value.trim();
+            tip("✅ 注册成功！请到邮箱点击验证链接后再登录（没收到就看垃圾邮件箱）", true);
+            body.querySelector("#fPass").value = "";
+            showResend(mail);
+            return;
+          }
           if (!jwt || !res.user) throw new Error("响应异常");
           window.DSH_AUTH.save(jwt, res.user);
           location.hash = "#/account";
@@ -118,6 +157,11 @@
             msg = mode === "login"
               ? "❌ 账号或密码不对（密码至少6位，注意大小写）"
               : "❌ 注册似乎成功了但自动登录失败，请手动登录一次";
+          } else if (/not confirmed|未确认|未验证|confirm/i.test(m)) {
+            /* 邮箱还没验证：给出明确指引 + 一键重发 */
+            tip("⚠️ 邮箱还没验证：请到邮箱点击验证链接（没收到可重发）", false);
+            showResend((body.querySelector("#fUser").value || "").trim());
+            return;
           } else if (m.indexOf("429") > -1) {
             msg = "❌ 操作太频繁啦，请等一分钟再试";
           } else if (m.indexOf("taken") > -1 || m.indexOf("Username") > -1 || m.indexOf("Email") > -1) {
