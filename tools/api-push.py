@@ -98,7 +98,11 @@ def main():
             sys.exit("文件过大（%.1fMB）: %s，请改用 GitHub Releases 托管"
                      % (len(raw) / 1048576.0, p))
         try:
-            body = {"content": raw.decode("utf-8"), "encoding": "utf-8"}
+            # 文本文件按 UTF-8 上传；并把 Windows 的 CRLF 归一成 LF，
+            # 使远程 blob 与 git 仓库内容（core.autocrlf 存 LF）完全一致，
+            # 否则每次比对都会显示"文件已变化"而重复上传。
+            text = raw.decode("utf-8")
+            body = {"content": text.replace("\r\n", "\n"), "encoding": "utf-8"}
         except UnicodeDecodeError:
             body = {"content": base64.b64encode(raw).decode("ascii"), "encoding": "base64"}
         sha = call("POST", "/git/blobs", body)["sha"]
