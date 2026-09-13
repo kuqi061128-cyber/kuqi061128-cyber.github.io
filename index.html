@@ -88,6 +88,7 @@
     from { transform: translateX(-50%) translateY(0) rotate(6deg); }
     to   { transform: translateX(-50%) translateY(-7px) rotate(9deg); }
   }
+  .loader-stage picture { display: contents; }   /* 让 <picture> 不生成盒子，加载小人定位不受影响 */
   .loader-track {
     position: relative; height: 8px; border-radius: 4px;
     background: rgba(255,255,255,.1); overflow: visible;
@@ -583,7 +584,7 @@
 <!-- ================= 开场加载屏：小人沿进度条奔跑，加载完淡出 ================= -->
 <div id="loader">
   <div class="loader-box">
-    <div class="loader-stage"><img class="loader-runner" src="assets/img/runner.png?v=2" alt="加载中"></div>
+    <div class="loader-stage"><picture><source srcset="assets/img/runner.webp?v=1" type="image/webp"><img class="loader-runner" src="assets/img/runner.png?v=2" alt="加载中"></picture></div>
     <div class="loader-track"><div class="loader-fill" id="loaderFill"></div></div>
     <div class="loader-pct"><span id="loaderPct">0</span>%</div>
   </div>
@@ -617,7 +618,7 @@
 <div class="toast" id="toast"></div>
 
 <!-- ================= 站点信息：博客名 / 头像 / 介绍 / 背景图 / 页脚，改 site.js 即可 ================= -->
-<script src="site.js?v=13"></script>
+<script src="site.js?v=15"></script>
 
 <!-- ================= 插件库：一个插件一个文件，升级/更换/下线只动 plugins/ 目录 ================= -->
 <script>
@@ -668,7 +669,7 @@
 </script>
 <script src="views/board.dynamic.js?v=3"></script>
 <script src="views/archive.js?v=1"></script>
-<script src="views/about.js?v=4"></script>
+<script src="views/about.js?v=5"></script>
 <script src="views/links.js?v=1"></script>
 <script src="views/account.js?v=8"></script>
 <script src="views/comments.js?v=2"></script>
@@ -1086,6 +1087,19 @@ function shareBar(kind, id, title) {
     "</div>";
 }
 
+/* 头像渲染：优先 WebP（体积小），不支持 WebP 的老浏览器经 <picture> 自动回退
+   —— site.js 配 avatar(webp) + avatarFallback(gif) 即可；留空 avatar 则显示名字首字 */
+function avatarImg() {
+  const av = SITE.avatar || "";
+  const fb = SITE.avatarFallback || "";
+  if (!av) return esc((SITE.ownerName || SITE.name || "博")[0]);
+  if (fb && /\.webp(\?|$)/i.test(av)) {
+    return '<picture><source srcset="' + esc(av) + '" type="image/webp">' +
+      '<img src="' + esc(fb) + '" alt="头像"></picture>';
+  }
+  return '<img src="' + esc(av) + '" alt="头像">';
+}
+
 /* 非详情页：把 og 标签重置为站点信息，并移除详情页留下的 JSON-LD
    （SPA 内从文章返回首页时，否则会残留上一篇文章的标题/描述） */
 function resetSeo() {
@@ -1158,7 +1172,7 @@ function fmtNow() {
 
 /* ================= 插件系统：挂载与刷新（插件本体在 plugins/ 目录） ================= */
 const CTX = {
-  SITE, ARTICLES, WORKS, state, articleViews, esc, toast, fmtNow, storeGet, storeSet,
+  SITE, ARTICLES, WORKS, state, articleViews, esc, toast, fmtNow, storeGet, storeSet, avatarImg,
   refreshPlugins: () => refreshPlugins(),
 };
 
@@ -1272,9 +1286,7 @@ function postCard(a, kw) {
 function renderHome() {
   const latest = ARTICLES.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
   const owner = SITE.ownerName || SITE.name;   // 个人向位置用作者称呼，未配置则回退站名
-  const avatarHtml = SITE.avatar
-    ? '<img src="' + esc(SITE.avatar) + '" alt="头像">'
-    : esc((owner || "博")[0]);
+  const avatarHtml = avatarImg();
   mainView.innerHTML =
     '<div class="banner">' +
       '<div class="avatar">' + avatarHtml + '</div>' +

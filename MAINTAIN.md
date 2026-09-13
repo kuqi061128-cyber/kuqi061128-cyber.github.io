@@ -161,6 +161,10 @@ scp my-site/index.html root@47.97.125.235:/var/www/my-site/index.html
 ## 六、改站点信息 / 插件 / 分区（代码层）
 
 - **站点信息**：`site.js`（名字/签名/头像/背景/页脚）→ 上传 + `site.js?v=` 升级；
+  - 头像有两个字段：`avatar` 用 WebP（体积小，如 `assets/img/avatar.webp`），
+    `avatarFallback` 填同图的 GIF/PNG（如 `assets/img/preview.gif`）——老浏览器不支持 WebP 时会自动回退，
+    这是标准 `<picture>` 机制，两个都填最稳妥；只填 `avatar` 也能用（直接输出 `<img>`）。
+  - 加载屏小人同理：`assets/img/runner.webp`（无损，30.7KB）+ `runner.png` 兜底，写死在 index.html 的加载屏里。
 - **插件**：`plugins/` 一文件一插件。下线改 `enabled:false`；台词等改完升 `?v=`
   （如 `pet.js?v=15 → v16`）；点赞/统计/留言板已是云端版（`*.dynamic.js`）；
 - **分区**：`views/` 一文件一分区（account=我的 / board.dynamic=留言墙 / about / links）；

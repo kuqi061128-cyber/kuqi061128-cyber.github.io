@@ -16,9 +16,10 @@
         '<div class="view-head"><h2 class="view-title">👋 关于</h2></div>' +
         '<article class="post-detail">' +
           '<div class="banner" style="margin-bottom:20px">' +
-            '<div class="avatar">' + (s.avatar
-              ? '<img src="' + ctx.esc(s.avatar) + '" alt="头像">'
-              : ctx.esc((owner || "博")[0])) + "</div>" +
+            '<div class="avatar">' + (ctx.avatarImg
+              ? ctx.avatarImg()
+              : (s.avatar ? '<img src="' + ctx.esc(s.avatar) + '" alt="头像">'
+                          : ctx.esc((owner || "博")[0]))) + "</div>" +
             '<div><h2>' + ctx.esc(owner) + "</h2>" +
             '<p>' + ctx.esc(s.tagline) + "</p></div>" +
           "</div>" +

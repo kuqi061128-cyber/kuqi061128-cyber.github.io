@@ -14,9 +14,9 @@ window.BLOG_SITE = {
   description: "Kuqi 的个人网站：分享教程、随笔、作品与下载。",  // 站点简介（搜索引擎和分享卡片摘要）
 
   /* 头像 */
-  avatar: "assets/img/avatar.gif?v=1",  // 头像：96px/9帧压缩动图(33KB，原 preview.gif 131KB)
-  // 想要更极致的体积可换成静态版：assets/img/avatar-static.webp?v=1 （仅 4KB，不动画）
-  // 留空 "" 则显示名字首字圆形占位
+  avatar: "assets/img/avatar.webp?v=1",       // 头像：动画 WebP（96px/25帧，77KB；原 GIF 131KB）
+  avatarFallback: "assets/img/preview.gif?v=3", // 老浏览器不支持 WebP 时自动回退这张图（<picture> 机制）
+  // 想换头像把图片丢进 assets/img/ 后改上面两行即可；只填 avatar 不填 avatarFallback 也能用（将直接输出 <img>）
 
   /* 背景 */
   backgroundVideo: "assets/background.mp4?v=4",  // 动态视频背景（mp4/webm，静音循环播放）；留空 "" 则用静态背景图。换视频文件后把 v=4 改成 v=5 可强制访客刷新缓存
