@@ -1,13 +1,18 @@
 /* ============================================================
  * 分区模块：我的（用户系统）
- *   - 未登录：登录 / 注册表单
- *   - 已登录：账号卡片、退出登录、投稿表单、我的投稿（含审核状态）
+ *   - 未登录：登录 / 注册（邮箱验证码） / 忘记密码（邮箱验证码）
+ *   - 已登录：账号卡片、退出登录、修改密码、投稿表单、我的投稿、我的评论
  *
- * 后端约定：
- *   POST /api/auth/local          {identifier,password} → {jwt|token, user}
- *   POST /api/auth/local/register {username,email,password}
- *   POST /api/works/submit        {data:{...}} → 强制草稿待审
- *   GET  /api/works/mine          → 自己的投稿(含待审核)
+ * 后端约定（2026-09-13 起注册改为邮箱验证码）：
+ *   POST /api/email-codes/send            {email,purpose:'register'|'reset'} 发验证码
+ *   POST /api/email-codes/register        {username,email,code,password}     验证码注册（成功即登录）
+ *   POST /api/email-codes/reset-password  {email,code,password}              验证码重置密码
+ *   POST /api/auth/local                  {identifier,password} → {jwt,user} 登录
+ *   POST /api/works/submit                {data:{...}} → 强制草稿待审
+ *   GET  /api/works/mine                  → 自己的投稿(含待审核)
+ *
+ * 注意：原生的 POST /api/auth/local/register 已在服务端被中间件拦截
+ *       （block-native-register），注册只能走验证码接口。
  *
  * 登录态存 localStorage：jwt + user(JSON)，留言板自动识别身份
  * ============================================================ */
@@ -47,133 +52,223 @@
       else S.renderProfile(body, ctx, esc, me);
     },
 
-    /* ============ 未登录：登录 / 注册 ============ */
-    renderAuth(body, esc) {
+    /* ============ 未登录：登录 / 注册（邮箱验证码） / 找回密码 ============ */
+    renderAuth(body, ctx, esc) {
+      let mode = "login";          // login | register | reset
+      let cooldownTimer = null;
+
+      const INP = "width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;" +
+        "background:transparent;color:inherit;margin-bottom:10px";
+      const INP_INLINE = "padding:10px;border:1px solid var(--line);border-radius:8px;" +
+        "background:transparent;color:inherit;flex:1;min-width:0";
+      const BTN_MAIN = "width:100%;padding:11px;border:0;border-radius:8px;" +
+        "background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:15px;cursor:pointer";
+      const BTN_SEND = "font-size:12px;padding:0 14px;border:1px solid rgba(56,189,248,.35);border-radius:8px;" +
+        "background:transparent;color:var(--accent);cursor:pointer;white-space:nowrap";
+
       body.innerHTML =
-        '<article class="post-detail" style="max-width:520px;margin:0 auto">' +
-          '<div class="view-head" style="margin-bottom:6px"><h3>登录</h3><span style="font-size:12px;color:var(--muted)">注册即可投稿作品</span></div>' +
-          '<div style="display:flex;gap:8px;margin-bottom:14px">' +
-            '<button id="tabLogin" class="chip" style="cursor:pointer;border:0">登录</button>' +
-            '<button id="tabReg" class="chip" style="cursor:pointer;border:0;background:transparent;color:var(--accent);border:1px solid rgba(56,189,248,.25)">注册新账号</button>' +
+        '<article class="post-detail" style="max-width:560px;margin:0 auto">' +
+          '<div class="view-head" style="margin-bottom:10px">' +
+            '<h3 id="authTitle">登录</h3>' +
+            '<span id="authSub" style="font-size:12px;color:var(--muted)">注册需要邮箱验证码</span>' +
           '</div>' +
-          '<form id="authForm">' +
-            '<input id="fUser" placeholder="用户名或邮箱 *" required style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
-            /* 注意：邮箱框不能带 required——隐藏必填字段会静默拦截表单提交；
-               切到注册模式时由 JS 动态设置 required */
-            '<input id="fMail" type="email" placeholder="邮箱 *" style="display:none;width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
-            '<input id="fPass" type="password" placeholder="密码 *（至少6位）" required minlength="6" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit;margin-bottom:10px">' +
-            '<button type="submit" id="fGo" style="width:100%;padding:11px;border:0;border-radius:8px;' +
-              'background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:15px;cursor:pointer">登 录</button>' +
-            '<div id="fTip" style="margin-top:10px;font-size:13px;text-align:center;min-height:18px;color:var(--muted)"></div>' +
-            '<div id="fExtra" style="margin-top:10px;text-align:center"></div>' +
-          '</form>' +
+          '<div id="authTabs" style="display:flex;gap:8px;margin-bottom:14px"></div>' +
+          '<form id="authForm"></form>' +
+          '<div id="fTip" style="margin-top:10px;font-size:13px;text-align:center;min-height:18px;color:var(--muted)"></div>' +
         '</article>';
 
-      let mode = "login";
-      const tip = (t, ok) => {
-        const n = body.querySelector("#fTip");
-        n.textContent = t;
-        n.style.color = ok ? "#2f9e44" : "#d02b20";
-      };
+      let form = body.querySelector("#authForm");
+      const tipEl = body.querySelector("#fTip");
+      const tabsEl = body.querySelector("#authTabs");
+      const titleEl = body.querySelector("#authTitle");
+      const subEl = body.querySelector("#authSub");
 
-      /* 邮箱验证相关：重发验证邮件按钮（注册成功待验证 / 登录提示未验证时出现） */
-      function showResend(email) {
-        const box = body.querySelector("#fExtra");
-        if (!box) return;
-        box.innerHTML = '<button type="button" id="btnResend" class="chip" ' +
-          'style="cursor:pointer;background:transparent;color:var(--accent);' +
-          'border:1px solid rgba(56,189,248,.35);padding:7px 18px">📧 重新发送验证邮件</button>';
-        const btn = box.querySelector("#btnResend");
-        btn.addEventListener("click", () => {
-          const mail = (email || body.querySelector("#fMail").value ||
-            body.querySelector("#fUser").value || "").trim();
-          if (!mail || mail.indexOf("@") < 0) {
-            return tip("请先在上方填写你的注册邮箱", false);
-          }
+      const tip = (t, ok) => {
+        tipEl.textContent = t;
+        tipEl.style.color = ok ? "#2f9e44" : "#d02b20";
+      };
+      const g = sel => body.querySelector(sel);
+
+      /* ---------- 发送验证码（带 60 秒倒计时） ---------- */
+      function sendCode(email, btn, purpose) {
+        const mail = String(email || "").trim();
+        if (!mail) return tip("请先填写邮箱", false);
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) return tip("邮箱格式不正确", false);
+        btn.disabled = true;
+        btn.textContent = "发送中…";
+        window.DSH_API.post("/api/email-codes/send", { email: mail, purpose: purpose })
+          .then(() => {
+            tip("✅ 验证码已发往 " + mail + "，10 分钟内有效（没收到请查看垃圾邮件）", true);
+            let left = 60;
+            btn.textContent = left + " 秒后可重发";
+            cooldownTimer = setInterval(() => {
+              left -= 1;
+              if (left <= 0) {
+                clearInterval(cooldownTimer);
+                cooldownTimer = null;
+                btn.disabled = false;
+                btn.textContent = "重新发送";
+                return;
+              }
+              btn.textContent = left + " 秒后可重发";
+            }, 1000);
+          })
+          ["catch"]((err) => {
+            btn.disabled = false;
+            btn.textContent = "发送验证码";
+            tip("❌ " + (err.message || "发送失败"), false);
+          });
+      }
+
+      function tabBtn(id, label) {
+        const on = mode === id;
+        return '<button type="button" data-gomode="' + id + '" class="chip" style="cursor:pointer;border:0;' +
+          (on ? "" : "background:transparent;color:var(--accent);border:1px solid rgba(56,189,248,.25)") +
+          '">' + label + "</button>";
+      }
+
+      /* 重建表单节点：切换到另一个模式时，旧节点上的监听器随之销毁，
+         否则多次切换会导致提交时触发多个旧处理器（它们引用的字段已不存在） */
+      function newForm(html) {
+        const nf = document.createElement("form");
+        nf.id = "authForm";
+        nf.innerHTML = html;
+        form.replaceWith(nf);
+        form = nf;
+      }
+
+      function setMode(m) {
+        mode = m;
+        if (cooldownTimer) { clearInterval(cooldownTimer); cooldownTimer = null; }
+        tip("");
+        titleEl.textContent = m === "login" ? "登录" : m === "register" ? "注册" : "找回密码";
+        subEl.textContent = m === "login" ? "注册需要邮箱验证码"
+          : m === "register" ? "填写邮箱 → 收验证码 → 完成注册"
+          : "用邮箱验证码重置密码";
+        tabsEl.innerHTML = tabBtn("login", "登录") + tabBtn("register", "注册新账号") + tabBtn("reset", "忘记密码");
+
+        if (m === "login") {
+          newForm(
+            '<input id="fUser" placeholder="用户名或邮箱 *" required style="' + INP + '">' +
+            '<input id="fPass" type="password" placeholder="密码 *" required style="' + INP + '">' +
+            '<button type="submit" id="fGo" style="' + BTN_MAIN + '">登 录</button>');
+        } else if (m === "register") {
+          newForm(
+            '<input id="rUser" placeholder="用户名 *（2-30 个字符）" required maxlength="30" style="' + INP + '">' +
+            '<div style="display:flex;gap:8px;margin-bottom:10px">' +
+              '<input id="rMail" type="email" placeholder="邮箱 *" required style="' + INP_INLINE + '">' +
+              '<button type="button" id="rSend" style="' + BTN_SEND + '">发送验证码</button>' +
+            '</div>' +
+            '<input id="rCode" inputmode="numeric" maxlength="6" placeholder="6 位邮箱验证码 *" required style="' + INP + '">' +
+            '<input id="rPass" type="password" minlength="6" placeholder="密码 *（至少 6 位）" required style="' + INP + '">' +
+            '<button type="submit" id="rGo" style="' + BTN_MAIN + '">注 册</button>');
+        } else {
+          newForm(
+            '<div style="display:flex;gap:8px;margin-bottom:10px">' +
+              '<input id="sMail" type="email" placeholder="注册时用的邮箱 *" required style="' + INP_INLINE + '">' +
+              '<button type="button" id="sSend" style="' + BTN_SEND + '">发送验证码</button>' +
+            '</div>' +
+            '<input id="sCode" inputmode="numeric" maxlength="6" placeholder="6 位邮箱验证码 *" required style="' + INP + '">' +
+            '<input id="sPass" type="password" minlength="6" placeholder="新密码 *（至少 6 位）" required style="' + INP + '">' +
+            '<button type="submit" id="sGo" style="' + BTN_MAIN + '">重 置 密 码</button>');
+        }
+        bind(form);
+      }
+
+      /* ---------- 各模式的事件绑定 ---------- */
+      function bind(form) {
+        if (mode === "login") {
+          form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const u = g("#fUser").value.trim();
+            const p = g("#fPass").value;
+            if (!u || !p) return;
+            tip("登录中…", true);
+            window.DSH_API.post("/api/auth/local", { identifier: u, password: p })
+              .then((res) => {
+                const jwt = res.jwt || res.token;
+                if (!jwt || !res.user) throw new Error("响应异常");
+                window.DSH_AUTH.save(jwt, res.user);
+                location.hash = "#/account";
+                location.reload();   // 整页刷新，让所有插件感知登录态
+              })
+              ["catch"]((err) => {
+                const m = err.message || "";
+                if (m.indexOf("Invalid identifier or password") > -1) {
+                  tip("❌ 账号或密码不对（密码至少 6 位，注意大小写）", false);
+                } else if (m.indexOf("429") > -1) {
+                  tip("❌ 操作太频繁啦，请等一分钟再试", false);
+                } else if (/blocked|封禁/i.test(m)) {
+                  tip("❌ 账号已被封禁，请联系站长", false);
+                } else {
+                  tip("❌ " + m, false);
+                }
+              });
+          });
+          return;
+        }
+
+        if (mode === "register") {
+          form.querySelector("#rSend").addEventListener("click", () => sendCode(form.querySelector("#rMail").value, form.querySelector("#rSend"), "register"));
+          form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const username = g("#rUser").value.trim();
+            const email = g("#rMail").value.trim();
+            const code = g("#rCode").value.trim();
+            const password = g("#rPass").value;
+            if (!username || !email || !code || !password) return tip("请把信息填写完整", false);
+            if (password.length < 6) return tip("密码至少 6 位", false);
+            const btn = g("#rGo");
+            btn.disabled = true;
+            tip("注册中…", true);
+            window.DSH_API.post("/api/email-codes/register", { username, email, code, password })
+              .then((res) => {
+                const d = res.data || {};
+                if (!d.jwt || !d.user) throw new Error("响应异常");
+                window.DSH_AUTH.save(d.jwt, d.user);
+                tip("✅ 注册成功，正在进入…", true);
+                location.hash = "#/account";
+                location.reload();
+              })
+              ["catch"]((err) => {
+                btn.disabled = false;
+                tip("❌ " + (err.message || "注册失败"), false);
+              });
+          });
+          return;
+        }
+
+        /* reset */
+        form.querySelector("#sSend").addEventListener("click", () => sendCode(form.querySelector("#sMail").value, form.querySelector("#sSend"), "reset"));
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const email = g("#sMail").value.trim();
+          const code = g("#sCode").value.trim();
+          const password = g("#sPass").value;
+          if (!email || !code || !password) return tip("请把信息填写完整", false);
+          if (password.length < 6) return tip("新密码至少 6 位", false);
+          const btn = g("#sGo");
           btn.disabled = true;
-          btn.textContent = "发送中…";
-          window.DSH_API.post("/api/auth/send-email-confirmation", { email: mail })
+          tip("提交中…", true);
+          window.DSH_API.post("/api/email-codes/reset-password", { email, code, password })
             .then(() => {
-              btn.textContent = "✅ 已发送，请查收（含垃圾邮件箱）";
+              btn.disabled = false;
+              setMode("login");
+              tip("✅ 密码已重置，请用新密码登录", true);
             })
             ["catch"]((err) => {
-              const m = err.message || "";
               btn.disabled = false;
-              btn.textContent = "📧 重新发送验证邮件";
-              tip(/429/.test(m) ? "❌ 操作太频繁，请等一分钟再试"
-                : "❌ 发送失败：邮件服务暂时不可用，请联系站长", false);
+              tip("❌ " + (err.message || "重置失败"), false);
             });
         });
       }
 
-      const mailInput = body.querySelector("#fMail");
-      body.querySelector("#tabLogin").addEventListener("click", () => {
-        mode = "login";
-        mailInput.style.display = "none";
-        mailInput.required = false;   // 隐藏字段绝不能带 required（会静默拦截提交）
-        body.querySelector("#fGo").textContent = "登 录";
-      });
-      body.querySelector("#tabReg").addEventListener("click", () => {
-        mode = "register";
-        mailInput.style.display = "block";
-        mailInput.required = true;
-        body.querySelector("#fGo").textContent = "注 册";
+      tabsEl.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-gomode]");
+        if (b) setMode(b.dataset.gomode);
       });
 
-      body.querySelector("#authForm").addEventListener("submit", (e) => {
-        e.preventDefault();
-        const api = window.DSH_API;
-        const u = body.querySelector("#fUser").value.trim();
-        const p = body.querySelector("#fPass").value;
-        if (!u || !p) return;
-
-        tip(mode === "login" ? "登录中…" : "注册中…", true);
-        const req = mode === "login"
-          ? api.post("/api/auth/local", { identifier: u, password: p })
-          : api.post("/api/auth/local/register", {
-              username: u,
-              email: body.querySelector("#fMail").value.trim(),
-              password: p,
-            });
-
-        req.then((res) => {
-          const jwt = res.jwt || res.token;
-          /* 开启邮箱验证后：注册成功但不会立即签发登录令牌，提示去邮箱点验证链接 */
-          if (!jwt && res.user) {
-            const mail = res.user.email || body.querySelector("#fMail").value.trim();
-            tip("✅ 注册成功！请到邮箱点击验证链接后再登录（没收到就看垃圾邮件箱）", true);
-            body.querySelector("#fPass").value = "";
-            showResend(mail);
-            return;
-          }
-          if (!jwt || !res.user) throw new Error("响应异常");
-          window.DSH_AUTH.save(jwt, res.user);
-          location.hash = "#/account";
-          location.reload();   // 简单可靠：整页刷新让所有插件感知登录态
-        })["catch"]((err) => {
-          const m = err.message || "";
-          let msg;
-          if (m.indexOf("Invalid identifier or password") > -1) {
-            msg = mode === "login"
-              ? "❌ 账号或密码不对（密码至少6位，注意大小写）"
-              : "❌ 注册似乎成功了但自动登录失败，请手动登录一次";
-          } else if (/not confirmed|未确认|未验证|confirm/i.test(m)) {
-            /* 邮箱还没验证：给出明确指引 + 一键重发 */
-            tip("⚠️ 邮箱还没验证：请到邮箱点击验证链接（没收到可重发）", false);
-            showResend((body.querySelector("#fUser").value || "").trim());
-            return;
-          } else if (m.indexOf("429") > -1) {
-            msg = "❌ 操作太频繁啦，请等一分钟再试";
-          } else if (m.indexOf("taken") > -1 || m.indexOf("Username") > -1 || m.indexOf("Email") > -1) {
-            msg = "❌ 用户名或邮箱已被注册，换一个试试";
-          } else if (m.indexOf("password") > -1 && mode === "register") {
-            msg = "❌ 密码至少需要 6 位";
-          } else {
-            msg = "❌ " + m;
-          }
-          tip(msg, false);
-        });
-      });
+      setMode("login");
     },
 
     /* ============ 已登录：账号卡 + 投稿(作品/文章) + 我的列表 ============ */

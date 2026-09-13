@@ -34,7 +34,7 @@
 | 改后端（Strapi）功能 | 改 schema/控制器 → scp → `pm2 restart strapi` | 见第十二节 |
 | 后台保存/上传报「操作太频繁」 | 一般不会了（限流已拆分） | 若仍出现，见 12.4 调整后台额度 |
 | 看/改限流额度 | 服务器 `/etc/nginx/conf.d/00-ratelimit.conf` | 后台 120/分，公开接口 10/分 |
-| 用户注册要验证邮箱 / 忘记密码 | 已启用（2026-09-13） | 见 12.5；改邮箱或授权码改 .env 的 SMTP_* |
+| 用户注册 / 找回密码 | 邮箱 6 位验证码（已启用） | 见 12.5；改邮件文案改 email-code.js 的 MAIL_TEMPLATE |
 
 ## 一、网站现在是怎么工作的（30 秒版）
 
@@ -389,48 +389,36 @@ pm2 restart strapi
 > （在 `public/uploads/` 里能看到）。想让文章加载更快，插图时可以从 Media Library 里直接复制
 > **medium 或 large 版本的地址**，而不是原图地址。
 
-### 12.5 注册邮箱验证 + 找回密码（✅ 2026-09-13 已启用）
+### 12.5 注册邮箱验证码 + 找回密码（✅ 2026-09-13 启用）
 
-**当前状态：已启用并验证通过。**
-- SMTP：`smtp.qq.com:465`（SSL），发件账号 `2798963235@qq.com`，**授权码只写在服务器 `backend/.env` 的 `SMTP_PASS`（不入仓库）**；
-- 新用户注册后必须点邮件里的链接才能登录；未验证时登录会提示并可一键重发验证邮件；
-- 忘记密码可自助重置（邮件链接 → `reset.html` 页面设新密码）。
+**注册流程**：填「用户名 / 邮箱 / 密码」→ 点**发送验证码** → 邮箱收到 **6 位数字码** → 填入 → 注册完成并**自动登录**。
+忘记密码同理：邮箱 → 收码 → 输入验证码 + 新密码。
 
-**验证记录（2026-09-13）**：用真实邮箱注册探针账号 → 注册响应**不带登录令牌**、
-数据库 `confirmed=0`、未验证登录被拒（`Your account email is not confirmed`）、
-发信无报错、中文模板（主题「请验证你的邮箱 · Kuqi's Web」）已正确入库。
+**服务端强制规则（前端绕不过去）**：
 
-**要改授权码 / 换邮箱**：改服务器 `backend/.env` 里的 `SMTP_*` 四项，然后 `pm2 restart strapi`
-（或重跑下面的 apply 命令，它会覆盖这四项）。
-
-已就绪的部分：
-
-| 部分 | 位置 | 作用 |
+| 环节 | 实现 | 规则 |
 |---|---|---|
-| 邮箱验证落地页 | `/confirm.html` | 邮件里的链接指向这里，自动完成验证并显示中文结果（链接过期/已用过都有明确提示） |
-| 重置密码页 | `/reset.html` | 忘记密码邮件的落地页，输入两次新密码即可完成重置 |
-| 前端流程适配 | `views/account.js` | 注册成功待验证 → 明确提示去邮箱；未验证就登录 → 提示 + 「📧 重新发送验证邮件」按钮 |
-| 邮件服务配置 | `config/plugins.js` | **只有 `.env` 里配了 `SMTP_HOST` 才会启用**，没配时完全不影响注册/登录等其它功能 |
-| 邮件 provider | `@strapi/provider-email-nodemailer@5.52.1` | 已安装（与 Strapi 核心同版本，Node 20 兼容） |
-| 一键启用脚本 | `/opt/my-site/tools/apply-email.py` | 写 `.env` → 开启验证 → 换中文邮件模板 → 重启 →（可选）真实发信自测 |
+| 验证码 | 自建 `email_codes` 集合 | 6 位数字；**10 分钟**有效；**一次性**用完即废；错 **5 次**作废；同邮箱 **60 秒**内只能发一次 |
+| 发码 | `POST /api/email-codes/send` | `{email, purpose:'register'\|'reset'}`；已注册邮箱不能发注册码、未注册邮箱不能发重置码 |
+| 注册 | `POST /api/email-codes/register` | `{username,email,code,password}`；通过后创建 `confirmed=1` 的账号并直接返回登录令牌 |
+| 找回密码 | `POST /api/email-codes/reset-password` | `{email,code,password}` |
+| **拦住原生注册** | `src/middlewares/block-native-register.js`（已在 `config/middlewares.js` 注册） | Strapi 自带的 `/api/auth/local/register` 一律返回 400，**防止别人绕开验证码直接注册** |
+| 邮件文案 | `src/api/email-code/controllers/email-code.js` 顶部 `MAIL_TEMPLATE` | 想改邮件内容只改这一处 |
+| 自动清理 | crontab 每天 04:50 | 删除已使用 / 已过期的验证码 |
 
-**启用步骤**（拿到邮箱授权码后，一条命令）：
+**前端**：`views/account.js`（v8）提供三个入口「登录 / 注册新账号 / 忘记密码」，
+注册与重置都是"发码 → 输入 → 提交"，带 **60 秒倒计时**；发码失败会给明确原因（邮箱已注册、格式不对、太频繁等）。
 
-```bash
-SMTP_HOST=smtp.qq.com SMTP_USER=你的邮箱@qq.com SMTP_PASS=授权码 \
-SMTP_FROM_NAME="Kuqi's Web" SMTP_FROM_EMAIL=你的邮箱@qq.com \
-python3 /opt/my-site/tools/apply-email.py --apply --selftest
-```
+**日常要改的东西**：
+- 改邮件署名/站点名 → `email-code.js` 顶部 `SITE_NAME`；
+- 改发件邮箱或授权码 → 服务器 `backend/.env` 的 `SMTP_*`（授权码不入仓库），改完 `pm2 restart strapi`；
+- 改验证码有效期/试错次数/发送间隔 → `email-code.js` 顶部的 `TTL_MS / MAX_ATTEMPTS / COOLDOWN_MS`。
 
-- 只看不改：`python3 /opt/my-site/tools/apply-email.py --dry-run`
-- 回滚（关闭邮箱验证，保留找回密码）：`python3 /opt/my-site/tools/apply-email.py --rollback`
+**关于旧文件**：`confirm.html`（邮箱验证落地页）与 `reset.html`（重置密码落地页）是**链接式**流程的页面，
+注册已不再使用；`reset.html` 仍能服务 Strapi 自带"忘记密码邮件链接"流程。留着不影响，不用管。
 
-**需要准备**：一个邮箱 + **SMTP 授权码**（不是登录密码）。
-QQ 邮箱拿法：设置 → 账户 → 开启「IMAP/SMTP 服务」→ 短信验证 → 得到 16 位授权码。
-
-**启用后的效果**：
-- 新用户注册后必须点邮件里的链接才能登录（未验证时登录会提示，并可一键重发验证邮件）；
-- 用户忘记密码可**自助重置**，不用再找站长改密码。
+**注意**：插件设置里的 `email_confirmation` 保持 `true`，作用是"未确认的账号不允许登录"这层兜底；
+注册走验证码接口创建的账号天生就是 confirmed，不受影响。
 
 ## 十三、常见问题
 
