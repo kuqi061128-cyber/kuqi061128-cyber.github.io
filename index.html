@@ -20,8 +20,6 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0f172a">
 <link rel="apple-touch-icon" href="assets/img/icon-256.png">
-<!-- 第三方服务预连接：统计脚本握手提前完成，不阻塞也不抢首屏 -->
-<link rel="preconnect" href="https://busuanzi.ibruce.info" crossorigin>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -255,6 +253,20 @@
   .post-sum { color: var(--muted); font-size: 14px; margin-bottom: 12px; }
   .read-more { font-size: 13px; text-decoration: none; }
   .read-more:hover { text-decoration: underline; }
+
+  /* ---- 带封面的文章卡片（后台给文章设了 cover 时自动切换成左图右文） ---- */
+  .post-card.has-cover { display: flex; gap: 16px; align-items: flex-start; }
+  .pc-cover { flex: none; display: block; width: 96px; height: 96px; border-radius: 8px; overflow: hidden; }
+  .pc-cover img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform .25s ease;
+  }
+  .post-card.has-cover:hover .pc-cover img { transform: scale(1.06); }
+  .pc-body { flex: 1; min-width: 0; }
+  @media (max-width: 780px) {
+    .post-card.has-cover { gap: 12px; }
+    .pc-cover { width: 76px; height: 76px; }
+  }
 
   .filter-tag {
     display: inline-flex; align-items: center; gap: 6px;
@@ -616,7 +628,7 @@
 <script src="plugins/quote.js?v=1"></script>
 <script src="plugins/like.dynamic.js?v=4"></script>
 <script src="plugins/pet.js?v=15"></script>
-<script src="plugins/site-stats.dynamic.js?v=2"></script>
+<script src="plugins/site-stats.dynamic.js?v=3"></script>
 <script src="plugins/hot-posts.js?v=1"></script>
 <script src="plugins/categories.js?v=2"></script>
 <script src="plugins/tag-cloud.js?v=1"></script>
@@ -645,8 +657,8 @@
   window.registerSite = function (def) { BLOG_SITES.push(def); };
 </script>
 <!-- ================= 动态内容：优先 Strapi 后台接口，失败自动回退本地 JS 内容 ================= -->
-<script src="js/api.js?v=1"></script>
-<script src="js/api-loader.js?v=3"></script>
+<script src="js/api.js?v=2"></script>
+<script src="js/api-loader.js?v=5"></script>
 <!-- 本地 content/*.js 保留作兜底数据源（清单见 js/api-loader.js 的 LOCAL_FILES），请勿删除 -->
 
 <!-- ================= 分区模块：扩展分区（如留言板）在 views/ 目录，导航自动生成 ================= -->
@@ -659,7 +671,7 @@
 <script src="views/about.js?v=4"></script>
 <script src="views/links.js?v=1"></script>
 <script src="views/account.js?v=6"></script>
-<script src="views/comments.js?v=1"></script>
+<script src="views/comments.js?v=2"></script>
 
 <script>window.DSH_CONTENT_READY = window.DSH_CONTENT_READY || Promise.resolve();</script>
 <script>
@@ -1201,12 +1213,20 @@ function postCard(a, kw) {
   const ss = kw ? snip(a, kw) : "";
   const sum = ss || a.summary || "";
   const sumHtml = kw ? hilite(sum, kw) : esc(sum);
-  return '<article class="post-card">' +
+  const cover = a.cover || a.coverImg || "";   // 后台 cover 媒体字段（mapItem 已转为 URL 字符串）
+  const body =
     '<h4><a href="#/post/' + a.id + '">' + (kw ? hilite(a.title, kw) : esc(a.title)) + '</a></h4>' +
     '<div class="post-meta"><span class="cat">' + esc(a.category) + '</span>' +
     '<span>📅 ' + a.date + '</span><span>👀 ' + articleViews(a.id) + ' 浏览</span></div>' +
     '<p class="post-sum">' + sumHtml + '</p>' +
-    '<a class="read-more" href="#/post/' + a.id + '">阅读全文 →</a></article>';
+    '<a class="read-more" href="#/post/' + a.id + '">阅读全文 →</a>';
+  if (cover) {
+    return '<article class="post-card has-cover">' +
+      '<a class="pc-cover" href="#/post/' + a.id + '">' +
+      '<img src="' + esc(cover) + '" alt="' + esc(a.title) + '" loading="lazy"></a>' +
+      '<div class="pc-body">' + body + '</div></article>';
+  }
+  return '<article class="post-card">' + body + '</article>';
 }
 
   function workCard(w) {

@@ -30,7 +30,9 @@ window.DSH_API = (function () {
       return res.json()["catch"](function () { return {}; }).then(function (data) {
         if (!res.ok) {
           var msg = (data && data.error && data.error.message) ? data.error.message : ("HTTP " + res.status);
-          throw new Error(msg);
+          var err = new Error(msg);
+          err.status = res.status;   // 调用方可据此判断是否登录态失效（401/403）
+          throw err;
         }
         return data;
       });

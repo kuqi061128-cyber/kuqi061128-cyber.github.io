@@ -90,7 +90,9 @@
     var q = "?pagination[pageSize]=200";
     return Promise.all([
       // authorName 是普通字段随条目返回；媒体字段按需展开 url
-      API.withTimeout(API.get("/api/posts" + q + "&sort=date:desc"), TIMEOUT_MS),
+      // cover = 文章封面图（2026-09-13 新增，未设置时接口不返回该字段）
+      API.withTimeout(API.get("/api/posts" + q + "&sort=date:desc" +
+        "&populate[cover][fields][0]=url"), TIMEOUT_MS),
       API.withTimeout(API.get("/api/works" + q +
         "&populate[coverImg][fields][0]=url&populate[cover][fields][0]=url&populate[icon][fields][0]=url"), TIMEOUT_MS),
       API.withTimeout(API.get("/api/links" + q), TIMEOUT_MS)
@@ -110,9 +112,23 @@
       posts.length + " 篇文章 / " + works.length + " 个作品 / " + links.length + " 个推荐");
   }
 
+  /* 判断是否为「登录态失效」类错误：令牌过期/被撤销时，带着废令牌连
+     公开接口也会被拒，若不处理整站会静默回退成旧兜底内容 */
+  function isAuthError(err) {
+    if (err && (err.status === 401 || err.status === 403)) return true;
+    return /Missing or invalid credentials|Invalid token|Unauthorized|jwt/i.test((err && err.message) || "");
+  }
+
   window.DSH_CONTENT_READY =
     fetchAll()
       .then(registerFromApi)
+      ["catch"](function (err) {
+        if (!isAuthError(err)) throw err;
+        /* 令牌已失效：清掉本地登录态后重试一次，保证访客看到的是最新内容 */
+        console.warn("[api-loader] 登录令牌失效，清除后重试一次");
+        try { localStorage.removeItem("jwt"); localStorage.removeItem("user"); } catch (e) {}
+        return fetchAll().then(registerFromApi);
+      })
       ["catch"](function (err) {
         console.warn("[api-loader] 后台不可用(" + err.message + ")，回退到本地静态内容");
         return loadLocalScripts(LOCAL_FILES);

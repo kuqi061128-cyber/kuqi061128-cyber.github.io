@@ -1,13 +1,31 @@
 /* ============================================================
- * 插件：站点统计（右栏 · 统计）—— 云端数据版
- * 替换原 plugins/site-stats.js 使用；记得在 index.html 把 ?v= 升一位
+ * 插件：站点统计（右栏 · 统计）—— 全部数据自建版 v3
  *
- * 变化点:
- *   - 获赞数: 从「访客本地值」升级为「云端全网真实总数」(Like 集合条数)
- *   - 新增:   「留言数」(Message 集合条数，未建该类型时显示 —)
- *   - PV/UV:  仍用不蒜子(免费全网计数)；以后想完全自主可在阶段D自建
+ * 数据来源（全部走自己的 Strapi，2026-09-13 起不再依赖第三方）：
+ *   - 文章数 / 作品数：内存中的 ARTICLES、WORKS
+ *   - 总访问量 / 今日访问 / 最近 7 天：POST /api/visits/hit 打点 + GET /api/visits/summary 汇总
+ *   - 获赞数：/api/likes 条数    - 留言数：/api/messages 条数
+ *
+ * 说明：打点每次页面加载只发一次（模块级标记，SPA 重绘不会重复计数）；
+ *       统计接口拿不到时显示「—」，不影响其它功能。
  * ============================================================ */
 (function () {
+  let styleAdded = false;
+  function ensureStyle() {
+    if (styleAdded) return;
+    styleAdded = true;
+    const st = document.createElement("style");
+    st.textContent =
+      ".v7-chart{display:flex;align-items:flex-end;gap:6px;margin-top:12px;padding-top:10px;" +
+      "border-top:1px dashed rgba(255,255,255,.06)}" +
+      ".v7-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}" +
+      ".v7-bar{width:100%;border-radius:3px;background:linear-gradient(180deg,var(--accent),var(--accent2));" +
+      "min-height:4px;transition:height .3s ease}" +
+      ".v7-day{font-size:11px;color:var(--muted)}" +
+      ".v7-title{font-size:12px;color:var(--muted);margin-top:10px}";
+    document.head.appendChild(st);
+  }
+
   const P = {
     id: "site-stats",
     column: "right",
@@ -16,65 +34,72 @@
     live: true,
   };
 
+  function repaint() {
+    if (P._el && P._ctx) P.render(P._el, P._ctx);
+  }
+
+  function loadCounts(api, ctx) {
+    api.get("/api/likes?pagination[pageSize]=1").then(function (r) {
+      const m = r.meta && r.meta.pagination;
+      if (m && typeof m.total === "number") { P._likes = m.total; repaint(); }
+    })["catch"](function () { P._likes = ctx.state.likes; repaint(); });
+
+    api.get("/api/messages?pagination[pageSize]=1").then(function (r) {
+      const m = r.meta && r.meta.pagination;
+      if (m && typeof m.total === "number") { P._msgs = m.total; repaint(); }
+    })["catch"](function () { P._msgs = "—"; repaint(); });
+  }
+
+  function loadSummary(api) {
+    api.get("/api/visits/summary").then(function (r) {
+      if (r && r.data) { P._data = r.data; repaint(); }
+    })["catch"](function () {
+      P._data = P._data || { total: "—", today: "—", days: [] };
+      repaint();
+    });
+  }
+
+  function chartHtml(days) {
+    if (!days || !days.length) return "";
+    const max = Math.max.apply(null, days.map(function (d) { return d.count || 0; })) || 1;
+    return '<div class="v7-title">最近 7 天</div>' +
+      '<div class="v7-chart">' + days.map(function (d) {
+        const h = Math.max(4, Math.round((d.count || 0) / max * 46));
+        return '<div class="v7-col" title="' + d.date + "：" + d.count + ' 次">' +
+          '<div class="v7-bar" style="height:' + h + 'px"></div>' +
+          '<span class="v7-day">' + String(d.date).slice(8) + "</span></div>";
+      }).join("") + "</div>";
+  }
+
   P.render = function (el, ctx) {
+    ensureStyle();
     const api = window.DSH_API;
-    P._el = el; P._ctx = ctx;
+    P._el = el;
+    P._ctx = ctx;
 
-    /* 重绘前保留不蒜子已填的 PV/UV 值（脚本只挂一次，重绘后不再自动填，故需手动回填） */
-    const oldPv = document.getElementById("busuanzi_value_site_pv");
-    const oldUv = document.getElementById("busuanzi_value_site_uv");
-    const pvVal = (oldPv && oldPv.textContent.trim() && oldPv.textContent !== "…") ? oldPv.textContent : "…";
-    const uvVal = (oldUv && oldUv.textContent.trim() && oldUv.textContent !== "…") ? oldUv.textContent : "…";
-
+    const d = P._data || {};
     const likes = P._likes != null ? P._likes : ctx.state.likes;
     const msgs = P._msgs != null ? P._msgs : "…";
+    const row = (k, v) => '<div class="stat-row"><span>' + k + "</span><b>" + v + "</b></div>";
 
-    const row = (k, v) => '<div class="stat-row"><span>' + k + '</span><b>' + v + '</b></div>';
     el.innerHTML =
       '<div class="widget-title"><span><span class="ico">📊</span>站点统计</span></div>' +
       row("文章数", ctx.ARTICLES.length) +
       row("作品数", ctx.WORKS.length) +
-      row("总访问量", '<span id="busuanzi_value_site_pv">' + pvVal + '</span>') +
-      row("访客数", '<span id="busuanzi_value_site_uv">' + uvVal + '</span>') +
+      row("总访问量", d.total != null ? d.total : "…") +
+      row("今日访问", d.today != null ? d.today : "…") +
       row("获赞数", likes) +
-      row("留言数", msgs);
+      row("留言数", msgs) +
+      chartHtml(d.days);
 
-    /* 不蒜子：脚本只挂一次，避免 SPA 重绘时反复下载+请求堆积 */
-    if (!P._bsAdded) {
-      P._bsAdded = true;
-      const b = document.createElement("script");
-      b.id = "busuanzi-script";
-      b.async = true;
-      b.src = "https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js";
-      document.body.appendChild(b);
-      /* 首次加载兜底：6 秒后若仍为 … 显示 — */
+    /* 打点：每次页面加载仅一次（放在首屏渲染后，不抢关键路径） */
+    if (!P._hit) {
+      P._hit = true;
       setTimeout(function () {
-        const pv = document.getElementById("busuanzi_value_site_pv");
-        const uv = document.getElementById("busuanzi_value_site_uv");
-        if (pv && pv.textContent === "…") pv.textContent = "—";
-        if (uv && uv.textContent === "…") uv.textContent = "—";
-      }, 6000);
-    }
-
-    /* ---- 异步取云端计数，取到后只重绘一次 ---- */
-    if (!P._fetched) {
-      P._fetched = true;
-
-      api.get("/api/likes?pagination[pageSize]=1").then(function (r) {
-        const m = r.meta && r.meta.pagination;
-        if (m && typeof m.total === "number") {
-          P._likes = m.total;
-          if (P._el) P.render(P._el, P._ctx);
-        }
-      })["catch"](function () { P._likes = ctx.state.likes; });
-
-      api.get("/api/messages?pagination[pageSize]=1").then(function (r) {
-        const m = r.meta && r.meta.pagination;
-        if (m && typeof m.total === "number") {
-          P._msgs = m.total;
-          if (P._el) P.render(P._el, P._ctx);
-        }
-      })["catch"](function () { P._msgs = "—"; });
+        api.post("/api/visits/hit", {}).then(function () { loadSummary(api); })
+          ["catch"](function () { loadSummary(api); });
+        loadCounts(api, ctx);
+      }, 600);
     }
   };
 
