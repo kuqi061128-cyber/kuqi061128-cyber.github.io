@@ -35,10 +35,11 @@
             "</div>" +
             "<h3>找到我</h3>" +
             '<p>GitHub：<a href="https://github.com/kuqi061128-cyber" target="_blank" rel="noopener">github.com/kuqi061128-cyber</a><br>' +
-            '本站源码：<a href="https://github.com/kuqi061128-cyber/kuqi061128-cyber.github.io" target="_blank" rel="noopener">仓库地址</a>（觉得搭得还行欢迎参考）</p>' +
+            '本站源码：<a href="https://github.com/kuqi061128-cyber/kuqi061128-cyber.github.io" target="_blank" rel="noopener">仓库地址</a>（觉得搭得还行欢迎参考）<br>' +
+            '订阅更新：<a href="rss.xml">RSS 订阅</a>（把链接丢进任意阅读器即可）</p>' +
             "<h3>留言</h3>" +
             '<p>有任何想说的、想建议的，去 <a href="#/board">留言板</a> 直接写两句，' +
-            "不用注册任何账号，我看到都会回。</p>" +
+            "游客也能留言（每人限 1 条，注册登录后可留 3 条），我看到都会回。</p>" +
           "</div>" +
         "</article>";
     },

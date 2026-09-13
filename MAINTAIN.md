@@ -24,6 +24,10 @@
 | 手改 index.html 前后 | 过一遍安全清单 | 见 6.3 |
 | 改插件/样式/功能代码 | 本地对应文件 → scp 上传 → `?v=` 升级 | 见第五、六节 |
 | 源码备份 | git 三连（GitHub） | 见第九节 |
+| 看文章按年月归档 | 导航「归档」`#/archive` | 自动按日期分组，无需维护 |
+| 文章里放代码 | 正文写 `<pre><code>` | 自动加复制按钮+高亮；标注语言可写 `<code class="language-js">` |
+| 手机装成 App / 离线 | 浏览器「添加到主屏幕」 | PWA 已启用，见第十一节 |
+| 让文章被搜索引擎收录 | 不用手动做 | 服务器每天 04:40 自动生成 `/p/<id>.html`，见第十一节 |
 
 ## 一、网站现在是怎么工作的（30 秒版）
 
@@ -72,6 +76,10 @@ Nginx（你的服务器 47.97.125.235）
 - 投稿接口强制 `status:'draft'`，登录用户无法自行发布；
 - 通用创建接口对登录用户关闭（路由只留只读 + submit/mine 专用路由）；
 - 注册/登录/投稿都过 Nginx 写限流（每分钟约 10 次/IP，超限 429）；
+- **投稿正文渲染前会过前端白名单过滤器 `sanitizeHtml`（在 index.html，2026-09-10 上线）**：
+  `<script>/<iframe>/表单` 等标签、`on*` 事件属性、`javascript:` 链接一律剥除。
+  站长自己发布的正文也同样过一遍——所以写正文时别用表单/脚本类标签（会被剥掉），
+  排版用 `<p> <h3> <img> <a> <table> <blockquote> 等正常标签不受影响；
 - 权限由服务器 `src/index.js` 启动钩子自动授予/回收，改权限改那个文件。
 
 ## 四、用户管理（注册账号在哪、封禁开关在哪）
@@ -248,7 +256,83 @@ git push
     `git pull --rebase && git push` 归位；
   - 令牌在 github.com/settings/tokens 生成（勾 repo 权限），**用完撤销**。
 
-## 十、常见问题
+## 十、数据备份与恢复（2026-09 起已自动化）
+
+**现状**：服务器每天凌晨 3:10 自动备份（cron 已装好，勿动）：
+- 数据库全量：`/root/backups/db_YYYY-MM-DD.sql.gz`（保留 14 天）
+- 媒体库上传文件：`/root/backups/uploads_YYYY-MM-DD.tar.gz`（保留 14 天）
+- 脚本：`/opt/my-site/tools/backup-db.sh`，日志：`/var/log/backup-db.log`
+
+**异地副本**：每周一上午 9:30 由 WorkBuddy 定时任务自动把服务器上最新一份拉到本地
+`C:\Users\wishdream\Desktop\DSH\服务器备份\`（本地保留 4 份）。
+这样即使服务器整台出事，数据也不会全丢。
+
+**2026-09-10 已做恢复演练**：最新备份可完整恢复（47 张表、文章数据齐全）。
+
+### 手动恢复方法（照抄即可，SSH 到服务器后）
+
+```bash
+# 1. 用某天的备份恢复数据库（会覆盖 strapi_db 现有数据！）
+gunzip -c /root/backups/db_2026-09-10.sql.gz | mysql strapi_db
+# 2. 恢复媒体库上传文件（解压回原路径）
+tar xzf /root/backups/uploads_2026-09-10.tar.gz -C /
+# 3. 重启 Strapi
+pm2 restart strapi
+```
+
+> 恢复会**覆盖**现有数据，拿不准先问 AI。想先验证备份好不好使，
+> 恢复到临时库试试：`mysql -e "CREATE DATABASE restore_test"`，把第 1 步的
+> `strapi_db` 换成 `restore_test`，测完 `mysql -e "DROP DATABASE restore_test"`。
+
+### 手动备份一次（做危险操作前建议先跑）
+
+```bash
+/bin/bash /opt/my-site/tools/backup-db.sh
+```
+
+## 十一、前端功能地图（2026-09-13 新增）
+
+本轮给前端加了一批阅读体验与可发现性功能，都**不需要日常维护**，这里只讲"坏了去哪看"和"改动的坑"。
+
+### 新增了什么
+
+| 功能 | 文件 | 说明 |
+|---|---|---|
+| 文章目录 TOC + 阅读时长 | index.html（`buildToc` / `readingMinutes`） | 标题 ≥3 个才显示；点击平滑滚动，不会污染 `#/post/x` 路由 |
+| 图片灯箱 | index.html（`openLightbox`） | 点正文图片放大，多图可 ← → 切换，Esc/点背景关闭 |
+| 返回列表保留滚动位置 | index.html（`route()` 里 `lastListScroll`） | 从详情返回同一个列表才恢复，切换筛选/换页仍回顶部 |
+| 分类统计可点击 | plugins/categories.js（**v2**） | 点分类名跳 `#/articles/tag/分类` |
+| 404 兜底页 | index.html（`renderNotFound`） | 未匹配的 `#/xxx` 显示友好提示，不再静默回首页 |
+| 上/下一篇 + 相关文章 | index.html（`relatedPosts`） | 相关度=标签重合×2 + 同分类×1，取前 3 |
+| 代码块复制 + 轻量高亮 | index.html（`enhanceCodeBlocks`） | 先转义再着色；语言提示写在 `<code class="language-js">` 效果最好 |
+| 列表分页 | index.html（每页 10 篇 + 加载更多） | 文章多了也不会一次渲染全部 |
+| 归档页 | views/archive.js（**新文件**） | 分区 id `archive`，导航自动出现 |
+| 正文搜索 + 命中高亮 | index.html（`ensureTextIndex` / `hilite`） | 索引首次搜索时才建，首屏无额外开销 |
+| 分享 + RSS 入口 | index.html（`shareBar`）、页脚、views/about.js | 分享地址指向 SEO 骨架页 |
+| PWA 可安装 + 离线 | manifest.webmanifest、sw.js、assets/img/icon-256.png、icon.svg | 手机可"添加到主屏幕"，弱网可读缓存页 |
+| SEO 骨架页 | tools/build-seo-pages.mjs | 每篇文章生成 `/p/<id>.html`，含 OG 标签与 JSON-LD |
+
+### 三个必须记住的坑
+
+1. **`sw.js` 必须免缓存**：Nginx 已加 `location = /sw.js { no-store }`。
+   它不在这条规则里的话，Service Worker 会永远不更新。**改 `sw.js` 内容后，把里面的 `VERSION` 数字 +1**（第 12 行附近），旧缓存会自动清掉。
+2. **PWA 出问题怎么回滚**：删掉服务器上的 `/var/www/my-site/sw.js`，让访客强刷一次即可（注册失效后浏览器会自动注销）。
+   插件系统的任何改动都不影响它，SW 只缓存外壳，不缓存接口。
+3. **新增文件不需要升 `?v=`，改已有文件必须升**——本轮 `categories.js` 升到 v2、`about.js` 升到 v4，就是这个原因。
+
+### SEO 骨架页（搜索引擎收录用）
+
+- 生成脚本：`/opt/my-site/tools/build-seo-pages.mjs`；
+- 定时：crontab 每天 **04:40**（排在 04:17 的 RSS 之后），日志 `/var/log/build-seo-pages.log`；
+- 产出：`/var/www/my-site/p/<id>.html` + 重新生成 `sitemap.xml`；
+- **发完文章想要立刻被收录**：SSH 手动跑一次
+  ```bash
+  /usr/bin/node /opt/my-site/tools/build-seo-pages.mjs
+  ```
+- 特性：接口不通时直接退出、不动任何文件；文章删了重跑会自动清理对应骨架页。
+- 访问 `https://kuqis.cloud/p/4.html` 会看到文章信息并**自动跳转**到 `#/post/4`。
+
+## 十二、常见问题
 
 | 现象 | 处理 |
 |---|---|
